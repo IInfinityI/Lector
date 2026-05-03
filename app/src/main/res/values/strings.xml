@@ -1,46 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lector</string>
-    <string name="action_settings">Settings</string>
-    <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
-    <string name="next">Next</string>
-    <string name="previous">Previous</string>
-
-    <string name="lorem_ipsum">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
-        volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus
-        dui nec risus. Maecenas non sodales nisi, vel dictum dolor. Class aptent taciti sociosqu ad
-        litora torquent per conubia nostra, per inceptos himenaeos. Suspendisse blandit eleifend
-        diam, vel rutrum tellus vulputate quis. Aliquam eget libero aliquet, imperdiet nisl a,
-        ornare ex. Sed rhoncus est ut libero porta lobortis. Fusce in dictum tellus.\n\n
-        Suspendisse interdum ornare ante. Aliquam nec cursus lorem. Morbi id magna felis. Vivamus
-        egestas, est a condimentum egestas, turpis nisl iaculis ipsum, in dictum tellus dolor sed
-        neque. Morbi tellus erat, dapibus ut sem a, iaculis tincidunt dui. Interdum et malesuada
-        fames ac ante ipsum primis in faucibus. Curabitur et eros porttitor, ultricies urna vitae,
-        molestie nibh. Phasellus at commodo eros, non aliquet metus. Sed maximus nisl nec dolor
-        bibendum, vel congue leo egestas.\n\n
-        Sed interdum tortor nibh, in sagittis risus mollis quis. Curabitur mi odio, condimentum sit
-        amet auctor at, mollis non turpis. Nullam pretium libero vestibulum, finibus orci vel,
-        molestie quam. Fusce blandit tincidunt nulla, quis sollicitudin libero facilisis et. Integer
-        interdum nunc ligula, et fermentum metus hendrerit id. Vestibulum lectus felis, dictum at
-        lacinia sit amet, tristique id quam. Cras eu consequat dui. Suspendisse sodales nunc ligula,
-        in lobortis sem porta sed. Integer id ultrices magna, in luctus elit. Sed a pellentesque
-        est.\n\n
-        Aenean nunc velit, lacinia sed dolor sed, ultrices viverra nulla. Etiam a venenatis nibh.
-        Morbi laoreet, tortor sed facilisis varius, nibh orci rhoncus nulla, id elementum leo dui
-        non lorem. Nam mollis ipsum quis auctor varius. Quisque elementum eu libero sed commodo. In
-        eros nisl, imperdiet vel imperdiet et, scelerisque a mauris. Pellentesque varius ex nunc,
-        quis imperdiet eros placerat ac. Duis finibus orci et est auctor tincidunt. Sed non viverra
-        ipsum. Nunc quis augue egestas, cursus lorem at, molestie sem. Morbi a consectetur ipsum, a
-        placerat diam. Etiam vulputate dignissim convallis. Integer faucibus mauris sit amet finibus
-        convallis.\n\n
-        Phasellus in aliquet mi. Pellentesque habitant morbi tristique senectus et netus et
-        malesuada fames ac turpis egestas. In volutpat arcu ut felis sagittis, in finibus massa
-        gravida. Pellentesque id tellus orci. Integer dictum, lorem sed efficitur ullamcorper,
-        libero justo consectetur ipsum, in mollis nisl ex sed nisl. Donec maximus ullamcorper
-        sodales. Praesent bibendum rhoncus tellus nec feugiat. In a ornare nulla. Donec rhoncus
-        libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
-        vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
-    </string>
+    <string name="action_settings">Настройки</string>
+    
+    <!-- Main Screen -->
+    <string name="home_title">Мои лекции</string>
+    <string name="home_search_hint">Поиск по названию, дате или тексту...</string>
+    <string name="home_empty_state">Нет записанных лекций</string>
+    <string name="home_empty_subtitle">Нажмите + чтобы начать запись</string>
+    
+    <!-- Recording Screen -->
+    <string name="recording_title">Запись лекции</string>
+    <string name="recording_subject_hint">Предмет</string>
+    <string name="recording_start">Начать запись</string>
+    <string name="recording_pause">Пауза</string>
+    <string name="recording_resume">Продолжить</string>
+    <string name="recording_stop">Завершить</string>
+    <string name="recording_duration">00:00:00</string>
+    <string name="recording_speaker_label">Спикер</string>
+    <string name="recording_transcribing">Распознавание речи...</string>
+    <string name="recording_math_detected">Обнаружена математика</string>
+    <string name="recording_graph_prompt">Построить график?</string>
+    <string name="recording_table_prompt">Создать таблицу?</string>
+    
+    <!-- Content Blocks -->
+    <string name="block_text">Текст</string>
+    <string name="block_math">Математика</string>
+    <string name="block_table">Таблица</string>
+    <string name="block_graph">График</string>
+    <string name="block_image">Изображение</string>
+    <string name="block_heading">Заголовок</string>
+    <string name="block_drawing">Рисунок</string>
+    
+    <!-- Speaker Labels -->
+    <string name="speaker_professor">Преподаватель</string>
+    <string name="speaker_student">Студент</string>
+    <string name="speaker_unknown">Неизвестный</string>
+    <string name="speaker_auto_detect">Авто-определение</string>
+    
+    <!-- Math Commands -->
+    <string name="math_voice_command">Произнесите математическое выражение</string>
+    <string name="math_result">Результат:</string>
+    <string name="math_insert">Вставить в конспект</string>
+    
+    <!-- Table Actions -->
+    <string name="table_add_row">Добавить строку</string>
+    <string name="table_add_column">Добавить столбец</string>
+    <string name="table_delete_row">Удалить строку</string>
+    <string name="table_delete_column">Удалить столбец</string>
+    <string name="table_export_md">Экспорт в Markdown</string>
+    <string name="table_export_csv">Экспорт в CSV</string>
+    
+    <!-- Graph Actions -->
+    <string name="graph_type_line">Линейный</string>
+    <string name="graph_type_bar">Столбчатый</string>
+    <string name="graph_add_data">Добавить данные</string>
+    <string name="graph_x_label">Ось X</string>
+    <string name="graph_y_label">Ось Y</string>
+    <string name="graph_title">Название графика</string>
+    
+    <!-- Drawing Canvas -->
+    <string name="drawing_tools">Инструменты</string>
+    <string name="drawing_pen">Перо</string>
+    <string name="drawing_eraser">Ластик</string>
+    <string name="drawing_clear">Очистить</string>
+    <string name="drawing_color">Цвет</string>
+    <string name="drawing_size">Размер</string>
+    <string name="drawing_save">Сохранить</string>
+    
+    <!-- Image Actions -->
+    <string name="image_take_photo">Сделать фото</string>
+    <string name="image_choose_gallery">Выбрать из галереи</string>
+    <string name="image_caption">Подпись к изображению</string>
+    
+    <!-- Export Options -->
+    <string name="export_title">Экспорт конспекта</string>
+    <string name="export_markdown">Markdown (.md)</string>
+    <string name="export_pdf">PDF документ</string>
+    <string name="export_text_only">Только текст</string>
+    <string name="export_with_media">С медиафайлами</string>
+    <string name="export_success">Конспект экспортирован</string>
+    <string name="export_error">Ошибка экспорта</string>
+    
+    <!-- Lecture List -->
+    <string name="lecture_date_format">dd MMMM yyyy</string>
+    <string name="lecture_time_format">HH:mm</string>
+    <string name="lecture_duration">Длительность:</string>
+    <string name="lecture_blocks">Блоков:</string>
+    <string name="lecture_delete">Удалить</string>
+    <string name="lecture_rename">Переименовать</string>
+    <string name="lecture_share">Поделиться</string>
+    
+    <!-- Search & Filter -->
+    <string name="search_all">Все</string>
+    <string name="search_today">Сегодня</string>
+    <string name="search_week">За неделю</string>
+    <string name="search_month">За месяц</string>
+    <string name="filter_by_subject">По предмету</string>
+    <string name="filter_by_date">По дате</string>
+    <string name="filter_by_content">По содержимому</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_language">Язык распознавания</string>
+    <string name="settings_audio_quality">Качество аудио</string>
+    <string name="settings_auto_save">Автосохранение</string>
+    <string name="settings_theme">Тема оформления</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_theme_system">Как в системе</string>
+    <string name="settings_storage">Хранилище</string>
+    <string name="settings_about">О приложении</string>
+    
+    <!-- Permissions -->
+    <string name="permission_mic_title">Доступ к микрофону</string>
+    <string name="permission_mic_message">Приложению нужен доступ к микрофону для записи лекций</string>
+    <string name="permission_camera_title">Доступ к камере</string>
+    <string name="permission_camera_message">Приложению нужен доступ к камере для фотографирования доски</string>
+    <string name="permission_storage_title">Доступ к хранилищу</string>
+    <string name="permission_storage_message">Приложению нужен доступ для сохранения записей</string>
+    <string name="permission_grant">Разрешить</string>
+    <string name="permission_deny">Отказать</string>
+    
+    <!-- Status Messages -->
+    <string name="status_recording">Идёт запись...</string>
+    <string name="status_paused">Запись на паузе</string>
+    <string name="status_stopped">Запись остановлена</string>
+    <string name="status_saving">Сохранение...</string>
+    <string name="status_saved">Сохранено</string>
+    <string name="status_processing">Обработка...</string>
+    <string name="status_ready">Готово к записи</string>
+    <string name="status_error">Ошибка</string>
+    
+    <!-- Dialogs -->
+    <string name="dialog_confirm">Подтвердить</string>
+    <string name="dialog_cancel">Отмена</string>
+    <string name="dialog_delete_title">Удалить лекцию?</string>
+    <string name="dialog_delete_message">Это действие нельзя отменить</string>
+    <string name="dialog_discard_title">Отменить изменения?</string>
+    <string name="dialog_discard_message">Несохранённые изменения будут потеряны</string>
+    <string name="dialog_unsaved_title">Есть несохранённые изменения</string>
+    <string name="dialog_unsaved_message">Сохранить текущую лекцию перед выходом?</string>
+    <string name="dialog_save">Сохранить</string>
+    <string name="dialog_discard">Не сохранять</string>
+    
+    <!-- Accessibility -->
+    <string name="a11y_record_button">Кнопка записи</string>
+    <string name="a11y_pause_button">Кнопка паузы</string>
+    <string name="a11y_stop_button">Кнопка остановки</string>
+    <string name="a11y_add_block">Добавить блок</string>
+    <string name="a11y_delete_block">Удалить блок</string>
+    <string name="a11y_edit_block">Редактировать блок</string>
+    <string name="a11y_speaker_badge">Индикатор спикера</string>
+    <string name="a11y_timestamp">Временная метка</string>
+    
+    <!-- Time Formats -->
+    <string name="time_short_format">mm:ss</string>
+    <string name="time_long_format">HH:mm:ss</string>
+    <string name="time_today">Сегодня в %1$s</string>
+    <string name="time_yesterday">Вчера в %1$s</string>
+    
+    <!-- Errors -->
+    <string name="error_no_mic">Микрофон недоступен</string>
+    <string name="error_no_storage">Недостаточно места</string>
+    <string name="error_recognition_failed">Ошибка распознавания речи</string>
+    <string name="error_save_failed">Ошибка сохранения</string>
+    <string name="error_load_failed">Ошибка загрузки</string>
+    <string name="error_network_offline">Требуется подключение к интернету</string>
+    
+    <!-- Tips -->
+    <string name="tip_math">Скажите "два плюс два" для создания формулы</string>
+    <string name="tip_heading">Скажите "заголовок" для создания раздела</string>
+    <string name="tip_table">Скажите "создать таблицу" для добавления таблицы</string>
+    <string name="tip_graph">Скажите "построить график" для визуализации данных</string>
+    <string name="tip_photo">Нажмите на иконку камеры для фото доски</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">Главная</string>
+    <string name="nav_record">Запись</string>
+    <string name="nav_archive">Архив</string>
+    <string name="nav_settings">Настройки</string>
 </resources>
