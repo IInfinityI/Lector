@@ -53,4 +53,8 @@
     <!-- Shadow Colors -->
     <color name="shadow_light">#1A000000</color>
     <color name="shadow_dark">#4D000000</color>
+    
+    <!-- Basic Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
 </resources>
