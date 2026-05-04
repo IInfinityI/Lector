@@ -1,5 +1,7 @@
 package com.example.lector.models;
 
+import com.example.lector.utils.NumberUtils;
+
 /**
  * Блок математического выражения.
  * Преобразует устные формулы в структурированный вид.

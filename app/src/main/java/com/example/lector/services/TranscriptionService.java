@@ -1,6 +1,8 @@
 package com.example.lector.services;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -55,7 +57,7 @@ public class TranscriptionService {
         // Поддержка смешанного языка (RU + EN)
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU");
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_CONTINUOUS_PREFERENCE, true);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
 
         try {

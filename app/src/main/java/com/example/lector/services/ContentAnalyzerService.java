@@ -8,8 +8,6 @@ import com.example.lector.models.ContentBlock;
 import com.example.lector.models.HeadingBlock;
 import com.example.lector.models.Lecture;
 import com.example.lector.models.MathBlock;
-import com.example.lector.models.ParagraphBlock;
-import com.example.lector.models.SubheadingBlock;
 import com.example.lector.models.TextBlock;
 
 import java.util.regex.Matcher;
@@ -73,7 +71,7 @@ public class ContentAnalyzerService {
         if (subheadingMatcher.find()) {
             String content = subheadingMatcher.group(2);
             Log.d(TAG, "Создан подзаголовок: " + content);
-            return new SubheadingBlock(content, timestamp);
+            return new HeadingBlock(content, timestamp, 2);
         }
         
         // Проверяем на команду абзаца
@@ -81,8 +79,7 @@ public class ContentAnalyzerService {
         if (paragraphMatcher.find()) {
             String content = paragraphMatcher.group(2);
             Log.d(TAG, "Создан абзац: " + content);
-            ParagraphBlock block = new ParagraphBlock(content, timestamp);
-            block.setType(BlockType.PARAGRAPH);
+            TextBlock block = new TextBlock(content, timestamp);
             return block;
         }
         
