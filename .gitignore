@@ -1,3 +1,23 @@
 ```
-.gradle/
+# Compiled and build artifacts
+*.class
+*.o
+*.obj
+*.out
+build/
+# Dependencies
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+# Environment
+.env
+.env.local
+*.env.*
+# Editors
+.vscode/
+.idea/
 ```
