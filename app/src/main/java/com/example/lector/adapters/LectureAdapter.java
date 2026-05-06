@@ -1,6 +1,7 @@
 package com.example.lector.adapters;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -22,9 +23,9 @@ import java.util.Locale;
 public class LectureAdapter extends RecyclerView.Adapter<LectureAdapter.LectureViewHolder> {
     
     private List<Lecture> lectureList;
-    private OnLectureClickListener listener;
-    private SimpleDateFormat dateFormat;
-    private SimpleDateFormat timeFormat;
+    private final OnLectureClickListener listener;
+    private final SimpleDateFormat dateFormat;
+    private final SimpleDateFormat timeFormat;
     
     public interface OnLectureClickListener {
         void onLectureClick(Lecture lecture);
@@ -61,11 +62,12 @@ public class LectureAdapter extends RecyclerView.Adapter<LectureAdapter.LectureV
         notifyDataSetChanged();
     }
     
-    class LectureViewHolder extends RecyclerView.ViewHolder {
-        private TextView textSubject;
-        private TextView textDate;
-        private TextView textDuration;
-        private TextView textBlocksCount;
+    static class LectureViewHolder extends RecyclerView.ViewHolder {
+        private final TextView textSubject;
+        private final TextView textDate;
+        private final TextView textDuration;
+        private final TextView textBlocksCount;
+        private final SimpleDateFormat dateFormat;
         
         public LectureViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -73,11 +75,15 @@ public class LectureAdapter extends RecyclerView.Adapter<LectureAdapter.LectureV
             textDate = itemView.findViewById(R.id.text_date);
             textDuration = itemView.findViewById(R.id.text_duration);
             textBlocksCount = itemView.findViewById(R.id.text_blocks_count);
+            dateFormat = new SimpleDateFormat("dd MMMM yyyy", Locale.getDefault());
             
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && listener != null) {
-                    listener.onLectureClick(lectureList.get(position));
+                if (position != RecyclerView.NO_POSITION) {
+                    LectureAdapter adapter = (LectureAdapter) getOwnerAdapter();
+                    if (adapter != null && adapter.listener != null) {
+                        adapter.listener.onLectureClick(adapter.lectureList.get(position));
+                    }
                 }
             });
         }
@@ -94,7 +100,7 @@ public class LectureAdapter extends RecyclerView.Adapter<LectureAdapter.LectureV
             textDuration.setText(durationStr);
             
             int blocksCount = lecture.getBlocks().size();
-            textBlocksCount.setText(itemView.getContext().getString(R.string.lecture_blocks) + " " + blocksCount);
+            textBlocksCount.setText(itemView.getContext().getString(R.string.lecture_blocks, blocksCount));
         }
     }
 }

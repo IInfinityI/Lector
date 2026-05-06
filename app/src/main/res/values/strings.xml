@@ -86,7 +86,7 @@
     <string name="lecture_date_format">dd MMMM yyyy</string>
     <string name="lecture_time_format">HH:mm</string>
     <string name="lecture_duration">Длительность:</string>
-    <string name="lecture_blocks">Блоков:</string>
+    <string name="lecture_blocks">Блоков: %d</string>
     <string name="lecture_delete">Удалить</string>
     <string name="lecture_rename">Переименовать</string>
     <string name="lecture_share">Поделиться</string>
