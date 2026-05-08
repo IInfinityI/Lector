@@ -1,0 +1,34 @@
+{
+  "name": "PremiumContentSystem",
+  "tree": {
+    "$className": "DataModel",
+
+    "ServerStorage": {
+      "$ignoreUnknownInstances": true,
+      "$className":"ServerStorage",
+      "$path":"src/ServerStorage"
+    },
+
+    "ReplicatedStorage": {
+      "$ignoreUnknownInstances": true,
+      "$className":"ReplicatedStorage",
+      "$path":"src/ReplicatedStorage"
+    },
+
+    "ServerScriptService": {
+      "$ignoreUnknownInstances": true,
+      "$className":"ServerScriptService",
+      "$path":"src/ServerScriptService"
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "PlayerScripts": {
+          "$path": "src/StarterPlayerScripts"
+        }
+      }
+    }
+  }
+}

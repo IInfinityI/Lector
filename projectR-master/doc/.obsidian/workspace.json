@@ -1,0 +1,229 @@
+{
+  "main": {
+    "id": "c9cfe06056f8c592",
+    "type": "split",
+    "children": [
+      {
+        "id": "a67293b6786288eb",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f72c8b5a18453393",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "Доски/Список задач.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              },
+              "icon": "lucide-trello",
+              "title": "Список задач"
+            }
+          },
+          {
+            "id": "cdf1dd40415940c8",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Проекты/Идеи/Пиксель арт.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Пиксель арт"
+            }
+          },
+          {
+            "id": "d21a97b5d71599a1",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "Доски/Список задач.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              },
+              "icon": "lucide-trello",
+              "title": "Список задач"
+            }
+          }
+        ],
+        "currentTab": 2
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "f83e0e98c3799693",
+    "type": "split",
+    "children": [
+      {
+        "id": "f62ceeee07a71d4a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "53eb8c1ec4d2902c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Файловый менеджер"
+            }
+          },
+          {
+            "id": "89c0d7dfa76acd51",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Поиск"
+            }
+          },
+          {
+            "id": "ec2b80b8200ea335",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Закладки"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "513c06e06107436f",
+    "type": "split",
+    "children": [
+      {
+        "id": "d1a4f614b9f10bbc",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "756fab324c37d4b5",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Настройка окружения.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Обратные ссылки для Настройка окружения"
+            }
+          },
+          {
+            "id": "4fa7ae6a8d360254",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Настройка окружения.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Исходящие ссылки из Настройка окружения"
+            }
+          },
+          {
+            "id": "409436e529d7085f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Теги"
+            }
+          },
+          {
+            "id": "e04d5013ba754e05",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Настройка окружения.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Структура Настройка окружения"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "bases:Создать новую базу": false,
+      "switcher:Меню быстрого перехода": false,
+      "graph:Граф": false,
+      "canvas:Создать новый холст": false,
+      "daily-notes:Сегодняшняя заметка": false,
+      "templates:Вставить шаблон": false,
+      "command-palette:Открыть палитру команд": false,
+      "obsidian-kanban:Создать новую доску": false
+    }
+  },
+  "active": "d21a97b5d71599a1",
+  "lastOpenFiles": [
+    "Доски/Список задач.md",
+    "Проекты/Идеи/Пиксель арт.md",
+    "Проекты/Идеи",
+    "Задачи/Ассеты/EventSystem. Добавить папку сохранения.md",
+    "Задачи/Ассеты/Без названия.md",
+    "Задачи/Ассеты",
+    "Инструкции/Настройка окружения/Установка Rojo.md",
+    "Настройка окружения.md",
+    "Установка Rojo.md",
+    "Настройка окружения"
+  ]
+}
