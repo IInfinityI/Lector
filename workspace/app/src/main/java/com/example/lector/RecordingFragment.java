@@ -297,6 +297,42 @@ public class RecordingFragment extends Fragment implements
         isPaused = true;
         updateUIForPaused();
     }
+
+    /** Исполнение голосовых команд диктовки (без создания блоков). */
+    private void executeDictationCommand(
+            com.example.lector.services.ContentAnalyzerService.DictationCommand cmd) {
+        switch (cmd) {
+            case NEWLINE:
+                // Пустая строка в живой ленте — визуально отделяет абзацы
+                commitLiveLine("", "");
+                Toast.makeText(getContext(), "Новая строка", Toast.LENGTH_SHORT).show();
+                break;
+            case COPY_ALL:
+                copyTranscriptToClipboard();
+                break;
+            case SAVE:
+                finishRecording();
+                break;
+        }
+    }
+
+    /** Копирование расшифровки в буфер обмена ОС (как в «Голосовом блокноте»). */
+    private void copyTranscriptToClipboard() {
+        if (!isAdded()) return;
+        String text = liveCommitted.toString().trim();
+        if (text.isEmpty() && currentLecture != null) {
+            text = currentLecture.toMarkdown();
+        }
+        if (text.isEmpty()) {
+            Toast.makeText(getContext(), "Пока нечего копировать", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        android.content.ClipboardManager cm = (android.content.ClipboardManager)
+            requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("Lector", text));
+        Toast.makeText(getContext(), "Текст скопирован в буфер обмена",
+            Toast.LENGTH_SHORT).show();
+    }
     
     private void resumeRecording() {
         transcriptionService.startListening();
@@ -503,6 +539,15 @@ public class RecordingFragment extends Fragment implements
     @Override
     public void onTextRecognized(String newText, String fullText) {
         requireActivity().runOnUiThread(() -> {
+            // Голосовые команды управления диктовкой: «новая строка»,
+            // «скопировать», «сохранить» — не создают блоков, а выполняют действие
+            com.example.lector.services.ContentAnalyzerService.DictationCommand cmd =
+                analyzerService.getDictationCommand(newText);
+            if (cmd != null) {
+                executeDictationCommand(cmd);
+                return;
+            }
+
             // Сначала моды (цепочка BlockHandler), затем встроенный анализатор ядра
             ContentBlock block = com.example.lector.plugin.PluginManager
                 .getInstance(requireContext()).getRegistry()

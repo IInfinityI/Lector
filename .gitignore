@@ -1,1 +1,17 @@
-(empty)
+# Android/Java build artifacts
+build/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# IDE files
+.idea/
+*.iml
+.gradle/
+local.properties
+
+# OS files
+.DS_Store
+Thumbs.db

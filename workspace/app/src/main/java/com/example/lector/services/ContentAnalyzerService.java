@@ -35,6 +35,22 @@ public class ContentAnalyzerService {
         "^(абзац|параграф|paragraph|p)\\s*[:\\-]?\\s*(.+)",
         Pattern.CASE_INSENSITIVE
     );
+
+    // Голосовые команды управления диктовкой (не создают блоков)
+    private static final Pattern NEWLINE_COMMAND = Pattern.compile(
+        "^(новая строка|новый абзац|перенос|new line|newline)[.!]?$",
+        Pattern.CASE_INSENSITIVE
+    );
+
+    private static final Pattern COPY_COMMAND = Pattern.compile(
+        "^(скопировать|копирайт|копировать всё|copy all|copy)[.!]?$",
+        Pattern.CASE_INSENSITIVE
+    );
+
+    private static final Pattern SAVE_COMMAND = Pattern.compile(
+        "^(сохранить|сохрани|save)[.!]?$",
+        Pattern.CASE_INSENSITIVE
+    );
     
     // Паттерны для математики
     private static final Pattern MATH_PATTERN = Pattern.compile(
@@ -48,6 +64,22 @@ public class ContentAnalyzerService {
     public ContentAnalyzerService() {
     }
 
+    /** Голосовые команды управления диктовкой (не создают контента). */
+    public enum DictationCommand { NEWLINE, COPY_ALL, SAVE }
+
+    /**
+     * Распознать голосовую команду управления диктовкой.
+     * Возвращает null, если текст — обычная фраза.
+     */
+    public DictationCommand getDictationCommand(String text) {
+        if (text == null) return null;
+        String t = text.trim();
+        if (NEWLINE_COMMAND.matcher(t).matches()) return DictationCommand.NEWLINE;
+        if (COPY_COMMAND.matcher(t).matches()) return DictationCommand.COPY_ALL;
+        if (SAVE_COMMAND.matcher(t).matches()) return DictationCommand.SAVE;
+        return null;
+    }
+
     /**
      * Проанализировать текст и создать соответствующий блок контента
      */
@@ -57,7 +89,13 @@ public class ContentAnalyzerService {
         }
 
         String trimmedText = text.trim();
-        
+
+        // Голосовые команды управления диктовкой не создают блоков —
+        // их обрабатывает вызывающий код через getDictationCommand()
+        if (getDictationCommand(trimmedText) != null) {
+            return null;
+        }
+
         // Проверяем на команду заголовка
         Matcher headingMatcher = HEADING_PATTERN.matcher(trimmedText);
         if (headingMatcher.find()) {
