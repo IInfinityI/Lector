@@ -15,6 +15,7 @@ Lector спроектирован как голосовой блокнот с а
 | `FormattingCommand` | Обработчик устных команд («заголовок», «выделить») |
 | `EventBus` | События ядра: RECORDING_STARTED / STOPPED, LECTURE_SAVED |
 | `PostProcessor` | Пост-обработка готовой лекции после остановки записи (чистка, склейка, структура) |
+| `BlockRenderer` | UI-слот: как мода-блок выглядит в редакторе и в Markdown-экспорте |
 | `PluginContext` | Изолированное окружение мода (данные лекции, своя песочница на диске) |
 
 Загрузкой и жизненным циклом модов управляет синглтон `PluginManager`.
@@ -126,7 +127,32 @@ public List<PostProcessor> getPostProcessors() {
 
 Смотрите `app/src/main/java/com/example/lector/plugin/builtin/HighlighterPlugin.java` —
 полный минимальный рабочий пример: команда «выдели <текст>» превращает распознанный текст
-в блок `HighlightBlock` с экспортом в Markdown (`==текст==`).
+в блок `HighlightBlock`, мод регистрирует UI-слот `BlockRenderer` (цветная подсветка
+в редакторе + экспорт в виде GitHub-адмонации `> [!NOTE]`).
+
+### UI-слоты (BlockRenderer)
+
+По умолчанию кастомные блоки отображаются через `block.toMarkdown()`. Чтобы мод
+управлял внешним видом своего блока в списке редактора и его Markdown-экспортом,
+зарегистрируйте рендерер в `onRegister`:
+
+```java
+registry.registerBlockRenderer(MyBlock.TYPE_KEY, new BlockRenderer() {
+    @Override
+    public void render(ContentBlock block, TextView timestampView,
+                       TextView contentView, View itemView) {
+        contentView.setText(((MyBlock) block).getText());
+        contentView.setBackgroundColor(myColor);
+    }
+    @Override
+    public String renderMarkdown(ContentBlock block) {
+        return "> " + ((MyBlock) block).getText();
+    }
+});
+```
+
+Ядро вызывает слоты с изоляцией ошибок: исключение в рендере мода не роняет
+редактор и экспорт (происходит деградация на отрисовку ядра).
 
 ## Соглашения и ограничения
 
@@ -138,5 +164,6 @@ public List<PostProcessor> getPostProcessors() {
 ## Дорожная карта API
 
 * v1 (реализовано): типы блоков, BlockHandler, FormattingCommand, EventBus, PostProcessor.
-* v2 (план): экспорт-фильтры (hook в Markdown/PDF-экспорт), UI-слоты в редакторе.
+* v1.1 (реализовано): UI-слоты BlockRenderer — кастомная отрисовка блоков мода в редакторе и Markdown-экспорте.
+* v2 (план): экспорт-фильтры (hook в PDF-экспорт), панель инструментов мода в редакторе.
 * v3 (план): sandboxed-загрузка внешних APK-плагинов.

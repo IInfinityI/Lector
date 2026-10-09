@@ -113,6 +113,9 @@ public class EditorFragment extends Fragment {
         binding.recyclerViewBlocks.setLayoutManager(new LinearLayoutManager(getContext()));
         blockAdapter = new ContentBlockAdapter(lecture.getBlocks());
         blockAdapter.setOnBlockSeekListener(this::seekAudioTo);
+        // UI-слоты модов: плагины сами рисуют свои типы блоков в списке
+        blockAdapter.setPluginRegistry(
+            com.example.lector.plugin.PluginManager.getInstance(requireContext()).getRegistry());
         binding.recyclerViewBlocks.setAdapter(blockAdapter);
 
         if (lecture.getNotes() != null) {
@@ -240,7 +243,8 @@ public class EditorFragment extends Fragment {
             repository.save(lecture);
         }
 
-        String markdown = lecture.toMarkdown();
+        String markdown = lecture.toMarkdown(
+            com.example.lector.plugin.PluginManager.getInstance(requireContext()).getRegistry());
         File dir = new File(requireContext().getExternalFilesDir(null), "exports");
         if (!dir.exists()) dir.mkdirs();
         File out = new File(dir, lecture.getSubjectSafe().replaceAll("[^\\w\\u0400-\\u04FF -]", "_")

@@ -38,6 +38,7 @@ public class PluginRegistry {
     }
 
     private final Map<String, RegisteredType> blockTypes = new HashMap<>();
+    private final Map<String, BlockRenderer> blockRenderers = new HashMap<>();
     private final List<BlockHandler> blockHandlers = new ArrayList<>();
     private final Map<String, FormattingCommand> formattingCommands = new HashMap<>();
     private final List<PostProcessor> postProcessors = new ArrayList<>();
@@ -46,6 +47,31 @@ public class PluginRegistry {
     public void registerBlockType(String key, LectorPlugin owner, BlockFactory factory) {
         if (key == null || key.isEmpty()) return;
         blockTypes.put(key.toUpperCase(), new RegisteredType(key.toUpperCase(), owner, factory));
+    }
+
+    /** Регистрация UI-слота: как рисовать блок кастомного типа в редакторе. */
+    public void registerBlockRenderer(String key, BlockRenderer renderer) {
+        if (key == null || key.isEmpty() || renderer == null) return;
+        blockRenderers.put(key.toUpperCase(), renderer);
+    }
+
+    /** Рендерер для типа блока; null — использовать отрисовку ядра. */
+    public BlockRenderer getRenderer(String typeKey) {
+        return typeKey != null ? blockRenderers.get(typeKey.toUpperCase()) : null;
+    }
+
+    /** Экспорт блока в Markdown с учётом плагинных UI-слотов. */
+    public String exportBlockMarkdown(ContentBlock block) {
+        if (block == null) return "";
+        BlockRenderer r = getRenderer(block.getTypeKey());
+        if (r != null) {
+            try {
+                return r.renderMarkdown(block);
+            } catch (Exception ignored) {
+                // Сбой плагина не должен ломать экспорт
+            }
+        }
+        return block.toMarkdown();
     }
 
     /** Создание блока кастомного типа по ключу; null если тип неизвестен. */

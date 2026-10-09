@@ -134,5 +134,35 @@ public class PluginRegistryTest {
         assertNotNull("Хендлер мода должен создать блок", block);
         assertEquals(HighlightBlock.TYPE_KEY, block.getTypeKey());
         assertTrue(block.toMarkdown().contains("**"));
+
+        // UI-слот мода: экспорт через реестр использует BlockRenderer плагина
+        assertNotNull("Мод должен зарегистрировать BlockRenderer",
+            registry.getRenderer(HighlightBlock.TYPE_KEY));
+        String md = registry.exportBlockMarkdown(block);
+        assertTrue("renderMarkdown мода добавляет GitHub-адмонیشن",
+            md.startsWith("> [!NOTE]"));
+    }
+
+    @Test
+    public void blockRendererSlot_customModOwnsItsRendering() {
+        // Сторонний мод регистрирует свой тип + рендерер — ядро делегирует ему
+        PluginRegistry registry = new PluginRegistry();
+        LectorPlugin owner = dummyPlugin("test.renderer");
+        registry.registerBlockType("CODE", owner, new PluginRegistry.BlockFactory() {
+            @Override public ContentBlock create(long timestamp) { return null; }
+            @Override public ContentBlock fromJson(JSONObject json, long ts) { return null; }
+        });
+        assertNull(registry.getRenderer("CODE")); // до регистрации слота — отрисовка ядра
+
+        registry.registerBlockRenderer("CODE", new BlockRenderer() {
+            @Override
+            public void render(ContentBlock b, android.widget.TextView ts,
+                               android.widget.TextView c, android.view.View v) { }
+            @Override
+            public String renderMarkdown(ContentBlock b) { return "```custom```"; }
+        });
+        assertEquals("```custom```", registry.getRenderer("code").renderMarkdown(null));
+        // Экспорт неизвестного/безопасного блока падает на toMarkdown ядра без исключения
+        assertEquals("", registry.exportBlockMarkdown(null));
     }
 }

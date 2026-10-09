@@ -1,6 +1,11 @@
 package com.example.lector.plugin.builtin;
 
+import android.graphics.Typeface;
+import android.view.View;
+import android.widget.TextView;
+
 import com.example.lector.plugin.BlockHandler;
+import com.example.lector.plugin.BlockRenderer;
 import com.example.lector.plugin.EventBus;
 import com.example.lector.plugin.LectorPlugin;
 import com.example.lector.plugin.PluginContext;
@@ -69,6 +74,31 @@ public class HighlighterPlugin implements LectorPlugin {
                 int sp = text.indexOf(' ');
                 String body = sp > 0 ? text.substring(sp + 1) : text;
                 return new HighlightBlock(body, timestampMs, color);
+            }
+        });
+
+        // 3. UI-слот: как рисовать HIGHLIGHT в редакторе и экспортировать в Markdown.
+        //    Ядро не знает про HighlightBlock — вся логика отображения принадлежит моду.
+        registry.registerBlockRenderer(HighlightBlock.TYPE_KEY, new BlockRenderer() {
+            @Override
+            public void render(com.example.lector.models.ContentBlock block,
+                               TextView timestampView, TextView contentView, View itemView) {
+                if (block instanceof HighlightBlock) {
+                    HighlightBlock hl = (HighlightBlock) block;
+                    contentView.setText(hl.getText());
+                    contentView.setTypeface(null, Typeface.BOLD);
+                    contentView.setBackgroundColor(hl.parseColor());
+                } else {
+                    contentView.setText(block.toMarkdown());
+                }
+            }
+
+            @Override
+            public String renderMarkdown(com.example.lector.models.ContentBlock block) {
+                if (block instanceof HighlightBlock) {
+                    return "> [!NOTE]\n> **" + ((HighlightBlock) block).getText() + "**";
+                }
+                return block.toMarkdown();
             }
         });
     }

@@ -127,6 +127,14 @@ public class Lecture implements Serializable {
      * Экспорт всей лекции в Markdown
      */
     public String toMarkdown() {
+        return toMarkdown(null);
+    }
+
+    /**
+     * Экспорт с учётом плагинных UI-слотов: если реестр задан, для кастомных
+     * типов блоков вызывается BlockRenderer.renderMarkdown мода.
+     */
+    public String toMarkdown(com.example.lector.plugin.PluginRegistry registry) {
         StringBuilder sb = new StringBuilder();
         
         // Заголовок лекции
@@ -137,7 +145,8 @@ public class Lecture implements Serializable {
         
         // Все блоки
         for (ContentBlock block : blocks) {
-            sb.append(block.toMarkdown()).append("\n\n");
+            String md = registry != null ? registry.exportBlockMarkdown(block) : block.toMarkdown();
+            sb.append(md).append("\n\n");
         }
         
         // Заметки

@@ -32,11 +32,17 @@ public class ContentBlockAdapter extends RecyclerView.Adapter<ContentBlockAdapte
     private List<ContentBlock> blocks;
     private SimpleDateFormat timeFormat;
     private OnBlockSeekListener seekListener;
+    private com.example.lector.plugin.PluginRegistry pluginRegistry;
     private long playingTimestampMs = -1; // текущая позиция воспроизведения, -1 — пауза
 
     public ContentBlockAdapter(List<ContentBlock> blocks) {
         this.blocks = blocks;
         this.timeFormat = new SimpleDateFormat("mm:ss", Locale.getDefault());
+    }
+
+    /** Передача реестра плагинов для поддержки кастомных UI-слотов (BlockRenderer). */
+    public void setPluginRegistry(com.example.lector.plugin.PluginRegistry registry) {
+        this.pluginRegistry = registry;
     }
 
     public void setOnBlockSeekListener(OnBlockSeekListener listener) {
@@ -116,8 +122,17 @@ public class ContentBlockAdapter extends RecyclerView.Adapter<ContentBlockAdapte
             long secs = seconds % 60;
             textTimestamp.setText(String.format(Locale.getDefault(), "%02d:%02d", mins, secs));
             
-            // Контент в зависимости от типа блока
-            if (block instanceof HeadingBlock) {
+            // Контент в зависимости от типа блока.
+            // Сначала — UI-слоты плагинов (кастомные рендереры), затем — отрисовка ядра.
+            com.example.lector.plugin.BlockRenderer pluginRenderer =
+                pluginRegistry != null ? pluginRegistry.getRenderer(block.getTypeKey()) : null;
+            if (pluginRenderer != null) {
+                try {
+                    pluginRenderer.render(block, textTimestamp, textContent, itemView);
+                } catch (Exception e) {
+                    textContent.setText(block.toMarkdown()); // деградация, а не падение
+                }
+            } else if (block instanceof HeadingBlock) {
                 HeadingBlock heading = (HeadingBlock) block;
                 textContent.setText(heading.getText());
                 textContent.setTextSize(18);
