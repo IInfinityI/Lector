@@ -196,4 +196,8 @@
     <string name="next">Далее</string>
     <string name="previous">Назад</string>
     <string name="lorem_ipsum">Пример текста для отображения в фрагменте.</string>
+    <string name="notification_recording_title">Lector записывает</string>
+    <string name="notification_recording_default">Идёт запись лекции…</string>
+    <string name="notification_channel_name">Запись аудио</string>
+    <string name="notification_channel_desc">Уведомление о фоновой записи лекции</string>
 </resources>

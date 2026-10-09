@@ -1,5 +1,8 @@
 package com.example.lector;
 
+import android.content.Intent;
+import android.os.Build;
+
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -142,6 +145,20 @@ public class RecordingFragment extends Fragment implements
             currentLecture = new Lecture(subject, System.currentTimeMillis());
             recorderService.startRecording(subject);
             transcriptionService.startListening();
+
+            // Foreground-сервис: запись не прерывается при сворачивании приложения
+            try {
+                Intent fg = new Intent(requireContext(),
+                        com.example.lector.services.RecordingForegroundService.class);
+                fg.putExtra(com.example.lector.services.RecordingForegroundService.EXTRA_PATH,
+                        recorderService.getCurrentOutputPath());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    requireContext().startForegroundService(fg);
+                } else {
+                    requireContext().startService(fg);
+                }
+            } catch (Exception ignored) {
+            }
             
             isRecording = true;
             isPaused = false;
@@ -164,6 +181,12 @@ public class RecordingFragment extends Fragment implements
     private void stopRecording() {
         recorderService.stopRecording();
         transcriptionService.stopListening();
+
+        try {
+            requireContext().stopService(new Intent(requireContext(),
+                    com.example.lector.services.RecordingForegroundService.class));
+        } catch (Exception ignored) {
+        }
         
         isRecording = false;
         isPaused = false;
@@ -291,7 +314,27 @@ public class RecordingFragment extends Fragment implements
             new String[]{Manifest.permission.RECORD_AUDIO},
             PERMISSION_REQUEST_CODE);
     }
-    
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE
+                && permissions.length > 0
+                && Manifest.permission.RECORD_AUDIO.equals(permissions[0])) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Разрешение выдано — продолжаем начатое действие
+                startRecording();
+            } else {
+                Toast.makeText(requireContext(),
+                    "Для записи лекций необходимо разрешение на микрофон",
+                    Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     // ===== AudioRecorderService callbacks =====
     
     @Override
