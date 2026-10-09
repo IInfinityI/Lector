@@ -243,16 +243,38 @@ public class EditorFragment extends Fragment {
             repository.save(lecture);
         }
 
-        String markdown = lecture.toMarkdown(
+        final String markdown = lecture.toMarkdown(
             com.example.lector.plugin.PluginManager.getInstance(requireContext()).getRegistry());
+
+        // Список форматов: Markdown ядра + все плагинные экспортёры (PDF и т.д.)
+        final java.util.List<com.example.lector.plugin.ExportFormat> formats =
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getRegistry().getAvailableFormats();
+        String[] names = new String[formats.size()];
+        for (int i = 0; i < formats.size(); i++) names[i] = formats.get(i).getDisplayName();
+
+        new android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Экспорт лекции")
+            .setItems(names, (dialog, which) -> doExport(formats.get(which), markdown))
+            .show();
+    }
+
+    private void doExport(com.example.lector.plugin.ExportFormat format, String markdown) {
+        com.example.lector.plugin.Exporter exporter =
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getRegistry().getExporter(format.getId());
+        if (exporter == null) {
+            Toast.makeText(getContext(), "Формат не поддерживается", Toast.LENGTH_SHORT).show();
+            return;
+        }
         File dir = new File(requireContext().getExternalFilesDir(null), "exports");
         if (!dir.exists()) dir.mkdirs();
         File out = new File(dir, lecture.getSubjectSafe().replaceAll("[^\\w\\u0400-\\u04FF -]", "_")
-            + ".md");
-        try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), "UTF-8")) {
-            w.write(markdown);
-            Toast.makeText(getContext(), "Экспортировано в " + out.getName(),
-                Toast.LENGTH_LONG).show();
+            + format.getFileExtension());
+        try {
+            boolean ok = exporter.export(lecture, markdown, out);
+            Toast.makeText(getContext(), ok ? "Экспортировано в " + out.getName()
+                    : "Экспорт не удался", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(getContext(), "Ошибка экспорта: " + e.getMessage(),
                 Toast.LENGTH_LONG).show();

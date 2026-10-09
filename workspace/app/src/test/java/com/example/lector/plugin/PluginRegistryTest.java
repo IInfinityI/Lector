@@ -165,4 +165,37 @@ public class PluginRegistryTest {
         // Экспорт неизвестного/безопасного блока падает на toMarkdown ядра без исключения
         assertEquals("", registry.exportBlockMarkdown(null));
     }
+
+    @Test
+    public void exporters_registryOffersFormatsAndPlugins() throws Exception {
+        PluginRegistry registry = new PluginRegistry();
+
+        // Ядро всегда предлагает Markdown
+        assertEquals(1, registry.getAvailableFormats().size());
+        assertEquals("markdown", registry.getAvailableFormats().get(0).getId());
+        assertNotNull(registry.getExporter("MARKDOWN"));
+
+        // Мод добавляет свой формат (аналог PDF-экспорта из Highlighter)
+        final java.io.File tmp = java.nio.file.Files.createTempFile("export-test", ".txt")
+            .toFile();
+        registry.registerExporter(new Exporter() {
+            @Override public ExportFormat getFormat() {
+                return new ExportFormat("txt", "Текст (.txt)", ".txt");
+            }
+            @Override public boolean export(com.example.lector.models.Lecture l,
+                                            String md, java.io.File target) throws Exception {
+                try (java.io.FileWriter w = new java.io.FileWriter(target)) { w.write(md); }
+                return true;
+            }
+        });
+
+        assertEquals(2, registry.getAvailableFormats().size());
+        Exporter txt = registry.getExporter("txt");
+        assertNotNull(txt);
+        assertEquals(".txt", txt.getFormat().getFileExtension());
+        java.io.File out = new java.io.File(tmp.getParentFile(), "out.txt");
+        assertTrue(txt.export(null, "hello", out));
+        assertTrue(out.exists());
+        assertNull(registry.getExporter("docx")); // несуществующий формат — null
+    }
 }

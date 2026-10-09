@@ -76,6 +76,7 @@ public class PluginManager {
                 for (BlockHandler h : plugin.getBlockHandlers()) registry.registerBlockHandler(h);
                 for (FormattingCommand c : plugin.getFormattingCommands()) registry.registerFormattingCommand(c);
                 for (PostProcessor p : plugin.getPostProcessors()) registry.registerPostProcessor(p);
+                for (Exporter ex : plugin.getExporters()) registry.registerExporter(ex);
                 plugin.subscribe(eventBus);
                 Log.i(TAG, "Плагин загружен: " + plugin.getId() + " v" + plugin.getVersion());
             } catch (Exception e) {

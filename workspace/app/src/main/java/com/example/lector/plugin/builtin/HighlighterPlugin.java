@@ -1,15 +1,26 @@
 package com.example.lector.plugin.builtin;
 
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.pdf.PdfDocument;
 import android.view.View;
 import android.widget.TextView;
 
 import com.example.lector.plugin.BlockHandler;
 import com.example.lector.plugin.BlockRenderer;
 import com.example.lector.plugin.EventBus;
+import com.example.lector.plugin.ExportFormat;
+import com.example.lector.plugin.Exporter;
 import com.example.lector.plugin.LectorPlugin;
 import com.example.lector.plugin.PluginContext;
 import com.example.lector.plugin.PluginRegistry;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Демо-мод «Highlighter»: распознаёт устные команды
@@ -106,5 +117,88 @@ public class HighlighterPlugin implements LectorPlugin {
     @Override
     public void subscribe(EventBus bus) {
         // Демо: можно вести статистику выделений в свою песочницу
+    }
+
+    /**
+     * Демо плагинного формата экспорта: PDF через PdfDocument (системный, без библиотек).
+     * Показывает, как мод добавляет новый формат, не трогая код ядра.
+     */
+    @Override
+    public List<Exporter> getExporters() {
+        return Arrays.<Exporter>asList(new PdfExporter());
+    }
+
+    static class PdfExporter implements Exporter {
+
+        static final ExportFormat FORMAT = new ExportFormat("pdf", "PDF-документ", ".pdf");
+
+        @Override
+        public ExportFormat getFormat() { return FORMAT; }
+
+        @Override
+        public boolean export(com.example.lector.models.Lecture lecture, String markdown,
+                              File targetFile) throws Exception {
+            android.graphics.pdf.PdfDocument doc = new android.graphics.pdf.PdfDocument();
+            int pageWidth = 720, pageHeight = 1080; // ~A4 при 72dpi
+
+            Paint bodyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            bodyPaint.setColor(Color.DKGRAY);
+            bodyPaint.setTextSize(14f);
+
+            float margin = 40f, lineHeight = 20f, maxWidth = pageWidth - 2 * margin;
+            int pageNum = 1;
+            PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(
+                pageWidth, pageHeight, pageNum).create();
+            PdfDocument.Page page = doc.startPage(info);
+            Canvas canvas = page.getCanvas();
+            float y = margin + 24f;
+
+            String[] lines = markdown.split("\n", -1);
+            for (String raw : lines) {
+                String line = raw.replaceAll("[*>`#]", " ").trim().isEmpty()
+                    ? "" : raw.replaceAll("^[*># ]+", "");
+                // Перенос длинных строк по словам
+                StringBuilder para = new StringBuilder(line);
+                while (para.length() > 0) {
+                    int fit = breakIndex(para.toString(), bodyPaint, maxWidth);
+                    String chunk = para.substring(0, fit);
+                    if (y > pageHeight - margin) {
+                        doc.finishPage(page);
+                        info = new PdfDocument.PageInfo.Builder(
+                            pageWidth, pageHeight, ++pageNum).create();
+                        page = doc.startPage(info);
+                        canvas = page.getCanvas();
+                        y = margin + 24f;
+                    }
+                    canvas.drawText(chunk, margin, y, bodyPaint);
+                    y += lineHeight;
+                    para = new StringBuilder(para.substring(fit));
+                }
+                if (line.isEmpty()) y += lineHeight / 2; // пустая строка — интервал
+            }
+
+            doc.finishPage(page);
+            try (FileOutputStream out = new FileOutputStream(targetFile)) {
+                doc.writeTo(out);
+            } finally {
+                doc.close();
+            }
+            return targetFile.exists();
+        }
+
+        private int breakIndex(String s, Paint paint, float maxWidth) {
+            if (paint.measureText(s) <= maxWidth) return s.length();
+            int lo = 1, hi = s.length();
+            while (lo < hi) {
+                int mid = (lo + hi + 1) / 2;
+                if (paint.measureText(s.substring(0, mid)) <= maxWidth) lo = mid;
+                else hi = mid - 1;
+            }
+            // Стянуть до границы слова
+            int cut = lo;
+            int space = s.lastIndexOf(' ', lo);
+            if (space > 0) cut = space + 1;
+            return Math.max(1, cut);
+        }
     }
 }

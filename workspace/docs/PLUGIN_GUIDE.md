@@ -16,6 +16,7 @@ Lector спроектирован как голосовой блокнот с а
 | `EventBus` | События ядра: RECORDING_STARTED / STOPPED, LECTURE_SAVED |
 | `PostProcessor` | Пост-обработка готовой лекции после остановки записи (чистка, склейка, структура) |
 | `BlockRenderer` | UI-слот: как мода-блок выглядит в редакторе и в Markdown-экспорте |
+| `Exporter` / `ExportFormat` | Плагинный формат экспорта (PDF, DOCX, HTML...) — мода добавляет свой пункт в диалог «Экспорт» |
 | `PluginContext` | Изолированное окружение мода (данные лекции, своя песочница на диске) |
 
 Загрузкой и жизненным циклом модов управляет синглтон `PluginManager`.
@@ -165,5 +166,6 @@ registry.registerBlockRenderer(MyBlock.TYPE_KEY, new BlockRenderer() {
 
 * v1 (реализовано): типы блоков, BlockHandler, FormattingCommand, EventBus, PostProcessor.
 * v1.1 (реализовано): UI-слоты BlockRenderer — кастомная отрисовка блоков мода в редакторе и Markdown-экспорте.
-* v2 (план): экспорт-фильтры (hook в PDF-экспорт), панель инструментов мода в редакторе.
+* v1.2 (реализовано): Exporter/ExportFormat — моды добавляют свои форматы экспорта (демо: PDF через системный PdfDocument в Highlighter).
+* v2 (план): панель инструментов мода в редакторе.
 * v3 (план): sandboxed-загрузка внешних APK-плагинов.

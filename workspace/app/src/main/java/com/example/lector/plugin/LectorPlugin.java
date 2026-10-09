@@ -47,6 +47,9 @@ public interface LectorPlugin {
     /** Процессоры пост-обработки, применяемые к лекции после остановки записи. */
     default List<PostProcessor> getPostProcessors() { return Collections.emptyList(); }
 
+    /** Плагинные форматы экспорта (PDF, DOCX, HTML...). Markdown встроен в ядро. */
+    default List<Exporter> getExporters() { return Collections.emptyList(); }
+
     /** Подписка на события ядра (начало/конец записи, сохранение лекции). */
     default void subscribe(EventBus bus) { }
 
