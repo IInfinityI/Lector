@@ -23,13 +23,31 @@ import java.util.Locale;
  * Адаптер для отображения блоков контента в RecyclerView.
  */
 public class ContentBlockAdapter extends RecyclerView.Adapter<ContentBlockAdapter.BlockViewHolder> {
-    
+
+    /** Клик по блоку — запрос перемотки аудио на таймкод блока (мс). */
+    public interface OnBlockSeekListener {
+        void onSeekTo(long timestampMs);
+    }
+
     private List<ContentBlock> blocks;
     private SimpleDateFormat timeFormat;
-    
+    private OnBlockSeekListener seekListener;
+    private long playingTimestampMs = -1; // текущая позиция воспроизведения, -1 — пауза
+
     public ContentBlockAdapter(List<ContentBlock> blocks) {
         this.blocks = blocks;
         this.timeFormat = new SimpleDateFormat("mm:ss", Locale.getDefault());
+    }
+
+    public void setOnBlockSeekListener(OnBlockSeekListener listener) {
+        this.seekListener = listener;
+    }
+
+    /** Подсветка активного блока во время воспроизведения. */
+    public void setPlayingTimestamp(long ms) {
+        if (this.playingTimestampMs == ms) return;
+        this.playingTimestampMs = ms;
+        notifyItemRangeChanged(0, blocks.size());
     }
     
     @NonNull
@@ -71,6 +89,10 @@ public class ContentBlockAdapter extends RecyclerView.Adapter<ContentBlockAdapte
         }
         
         public void bind(ContentBlock block) {
+            bind(block, getAdapterPosition());
+        }
+
+        public void bind(ContentBlock block, int position) {
             // Отображение спикера
             if (block.getSpeakerName() != null) {
                 textSpeaker.setText(block.getSpeakerName());
@@ -126,6 +148,38 @@ public class ContentBlockAdapter extends RecyclerView.Adapter<ContentBlockAdapte
             } else {
                 itemView.setAlpha(1.0f);
             }
+
+            // Синхронизация аудио↔текст: клик по блоку перематывает аудио
+            itemView.setOnClickListener(v -> {
+                if (seekListener != null) {
+                    seekListener.onSeekTo(block.getTimestamp());
+                }
+            });
+            textTimestamp.setOnClickListener(v -> {
+                if (seekListener != null) {
+                    seekListener.onSeekTo(block.getTimestamp());
+                }
+            });
+
+            // Активный блок при воспроизведении — визуально выделен
+            boolean active = isActiveBlock(position, block.getTimestamp());
+            itemView.setSelected(active);
+            float baseAlpha = (!block.isVerified() && !block.getWarnings().isEmpty()) ? 0.7f : 1.0f;
+            itemView.setAlpha(active ? baseAlpha : baseAlpha * 0.95f);
         }
+    }
+
+    /** Блок активен, если это ближайший предшествующий текущей позиции воспроизведения блок. */
+    private boolean isActiveBlock(int pos, long ts) {
+        if (playingTimestampMs < 0) return false;
+        if (ts > playingTimestampMs) return false;
+        // следующий блок с ненулевым таймкодом должен начинаться позже текущей позиции
+        for (int i = pos + 1; i < blocks.size(); i++) {
+            long next = blocks.get(i).getTimestamp();
+            if (next > 0) {
+                return playingTimestampMs < next;
+            }
+        }
+        return true; // последний блок
     }
 }

@@ -1,9 +1,13 @@
 package com.example.lector;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -25,6 +29,8 @@ import java.util.Locale;
 /**
  * Фрагмент редактора лекции - просмотр и редактирование записанной лекции.
  * Данные загружаются из LectureRepository (JSON-хранилище, совместимое с модами).
+ * Поддерживает синхронизацию аудио↔текст: клик по блоку перематывает запись,
+ * при воспроизведении активный блок подсвечивается.
  */
 public class EditorFragment extends Fragment {
 
@@ -32,6 +38,27 @@ public class EditorFragment extends Fragment {
     private Lecture lecture;
     private String lectureId;
     private LectureRepository repository;
+
+    // Аудиоплеер и синхронизация аудио↔текст
+    @Nullable private MediaPlayer mediaPlayer;
+    private boolean playerReady = false;
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+    private ContentBlockAdapter blockAdapter;
+
+    private final Runnable progressTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (mediaPlayer != null && playerReady && mediaPlayer.isPlaying()) {
+                int pos = mediaPlayer.getCurrentPosition();
+                binding.seekBar.setProgress(pos);
+                binding.textCurrentTime.setText(formatDuration(pos));
+                if (blockAdapter != null) {
+                    blockAdapter.setPlayingTimestamp(pos);
+                }
+                uiHandler.postDelayed(this, 500);
+            }
+        }
+    };
 
     @Nullable
     @Override
@@ -84,10 +111,108 @@ public class EditorFragment extends Fragment {
 
         // Отображение блоков контента (включая кастомные блоки модов)
         binding.recyclerViewBlocks.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.recyclerViewBlocks.setAdapter(new ContentBlockAdapter(lecture.getBlocks()));
+        blockAdapter = new ContentBlockAdapter(lecture.getBlocks());
+        blockAdapter.setOnBlockSeekListener(this::seekAudioTo);
+        binding.recyclerViewBlocks.setAdapter(blockAdapter);
 
         if (lecture.getNotes() != null) {
             binding.editNotes.setText(lecture.getNotes());
+        }
+
+        setupAudioPlayer();
+    }
+
+    /** Инициализация плеера, если у лекции есть существующий аудиофайл. */
+    private void setupAudioPlayer() {
+        String path = lecture.getAudioPath();
+        File audioFile = path != null ? new File(path) : null;
+        boolean hasAudio = audioFile != null && audioFile.exists();
+
+        binding.btnPlayPause.setEnabled(hasAudio);
+        binding.seekBar.setEnabled(hasAudio);
+        if (!hasAudio) {
+            binding.btnPlayPause.setAlpha(0.3f);
+            return;
+        }
+
+        releasePlayer();
+        mediaPlayer = new MediaPlayer();
+        try {
+            mediaPlayer.setDataSource(audioFile.getAbsolutePath());
+            mediaPlayer.setOnPreparedListener(mp -> {
+                playerReady = true;
+                binding.seekBar.setMax(mp.getDuration());
+            });
+            mediaPlayer.setOnCompletionListener(mp -> {
+                stopTicker();
+                binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_play);
+                if (blockAdapter != null) blockAdapter.setPlayingTimestamp(-1);
+            });
+            mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                playerReady = false;
+                Toast.makeText(getContext(), "Не удалось воспроизвести аудио",
+                    Toast.LENGTH_SHORT).show();
+                return true;
+            });
+            mediaPlayer.prepareAsync();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Аудио недоступно: " + e.getMessage(),
+                Toast.LENGTH_SHORT).show();
+        }
+
+        binding.btnPlayPause.setOnClickListener(v -> togglePlayPause());
+        binding.seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && playerReady && mediaPlayer != null) {
+                    mediaPlayer.seekTo(progress);
+                    binding.textCurrentTime.setText(formatDuration(progress));
+                    if (blockAdapter != null) blockAdapter.setPlayingTimestamp(progress);
+                }
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
+            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+    }
+
+    private void togglePlayPause() {
+        if (mediaPlayer == null || !playerReady) return;
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+            binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_play);
+            stopTicker();
+        } else {
+            mediaPlayer.start();
+            binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_pause);
+            uiHandler.post(progressTicker);
+        }
+    }
+
+    /** Синхронизация текст→аудио: перемотка по клику на блок и автоскролл к нему. */
+    private void seekAudioTo(long timestampMs) {
+        if (mediaPlayer == null || !playerReady) {
+            Toast.makeText(getContext(), "Аудиозапись недоступна", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        mediaPlayer.seekTo((int) timestampMs);
+        binding.seekBar.setProgress((int) timestampMs);
+        binding.textCurrentTime.setText(formatDuration(timestampMs));
+        if (blockAdapter != null) blockAdapter.setPlayingTimestamp(timestampMs);
+        if (!mediaPlayer.isPlaying()) {
+            togglePlayPause(); // стартуем воспроизведение с выбранного места
+        }
+    }
+
+    private void stopTicker() {
+        uiHandler.removeCallbacks(progressTicker);
+    }
+
+    private void releasePlayer() {
+        stopTicker();
+        playerReady = false;
+        if (mediaPlayer != null) {
+            try { mediaPlayer.release(); } catch (Exception ignored) { }
+            mediaPlayer = null;
         }
     }
 
@@ -141,6 +266,7 @@ public class EditorFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        releasePlayer();
         binding = null;
     }
 }
