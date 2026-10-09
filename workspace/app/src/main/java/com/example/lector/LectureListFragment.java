@@ -41,6 +41,7 @@ public class LectureListFragment extends Fragment {
     private FragmentLectureListBinding binding;
     private LectureAdapter adapter;
     private List<Lecture> lectureList;
+    private com.example.lector.data.LectureRepository repository;
     
     @Nullable
     @Override
@@ -93,15 +94,12 @@ public class LectureListFragment extends Fragment {
     }
     
     private void loadLectures() {
-        // Загрузка лекций из хранилища
-        // В реальной реализации здесь будет запрос к базе данных
+        // Загрузка реальных лекций из JSON-хранилища (filesDir/lectures)
         lectureList.clear();
-        
-        // Демо данные для тестирования
-        addDemoLectures();
-        
+        lectureList.addAll(repository.loadAll());
+
         adapter.notifyDataSetChanged();
-        
+
         if (lectureList.isEmpty()) {
             binding.emptyState.setVisibility(View.VISIBLE);
             binding.recyclerViewLectures.setVisibility(View.GONE);
@@ -110,18 +108,7 @@ public class LectureListFragment extends Fragment {
             binding.recyclerViewLectures.setVisibility(View.VISIBLE);
         }
     }
-    
-    private void addDemoLectures() {
-        // Добавляем демо лекции для отображения
-        Lecture lecture1 = new Lecture("Математический анализ", System.currentTimeMillis());
-        lecture1.setDuration(3600000);
-        lectureList.add(lecture1);
-        
-        Lecture lecture2 = new Lecture("Физика", System.currentTimeMillis() - 86400000);
-        lecture2.setDuration(5400000);
-        lectureList.add(lecture2);
-    }
-    
+
     private void filterLectures(String query) {
         List<Lecture> filtered = new ArrayList<>();
         String lowerQuery = query.toLowerCase();
@@ -201,6 +188,13 @@ public class LectureListFragment extends Fragment {
         }
     }
     
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Обновляем список после возврата с экрана записи
+        if (repository != null) loadLectures();
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();

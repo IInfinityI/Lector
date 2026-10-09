@@ -185,6 +185,13 @@
     <string name="first_fragment_label">Первый фрагмент</string>
     <string name="second_fragment_label">Второй фрагмент</string>
     
+    <!-- Plugins / Mods -->
+    <string name="plugins_title">Моды</string>
+    <string name="plugins_import">Установить мод (.jar/.dex)</string>
+    <string name="plugins_installed">Установленные моды</string>
+    <string name="plugins_error">Ошибка загрузки мода</string>
+    <string name="action_plugins">Моды</string>
+
     <!-- Common Strings -->
     <string name="next">Далее</string>
     <string name="previous">Назад</string>

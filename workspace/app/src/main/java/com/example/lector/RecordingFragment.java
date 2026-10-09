@@ -147,6 +147,12 @@ public class RecordingFragment extends Fragment implements
             isPaused = false;
             recordingStartTime = System.currentTimeMillis();
             
+
+            // Событие для модов: начало записи
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getEventBus().publish(
+                    com.example.lector.plugin.EventBus.Event.RECORDING_STARTED,
+                    currentLecture);
             updateUIForRecording();
             
         } catch (IOException e) {
@@ -162,6 +168,12 @@ public class RecordingFragment extends Fragment implements
         isRecording = false;
         isPaused = false;
         
+
+        // Событие для модов: конец записи
+        com.example.lector.plugin.PluginManager.getInstance(requireContext())
+            .getEventBus().publish(
+                com.example.lector.plugin.EventBus.Event.RECORDING_STOPPED,
+                currentLecture);
         updateUIForStopped();
     }
     
@@ -178,12 +190,31 @@ public class RecordingFragment extends Fragment implements
     }
     
     private void finishRecording() {
-        if (currentLecture != null) {
-            currentLecture.setBlocks(contentBlocks);
-            // Сохранение в базу данных
-            Toast.makeText(getContext(), "Лекция сохранена", Toast.LENGTH_SHORT).show();
+        if (currentLecture == null) {
+            Toast.makeText(getContext(), "Нечего сохранять — запись не была начата",
+                Toast.LENGTH_SHORT).show();
+            return;
         }
-        
+
+        currentLecture.setBlocks(contentBlocks);
+        currentLecture.setDuration(System.currentTimeMillis() - recordingStartTime);
+
+        // Сохранение через LectureRepository (JSON-хранилище, совместимое с модами)
+        boolean saved = new com.example.lector.data.LectureRepository(requireContext())
+            .save(currentLecture);
+
+        if (saved) {
+            // Событие для модов: лекция сохранена
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getEventBus().publish(
+                    com.example.lector.plugin.EventBus.Event.LECTURE_SAVED,
+                    currentLecture);
+        }
+
+        Toast.makeText(getContext(),
+            saved ? "Лекция сохранена" : "Ошибка сохранения лекции",
+            Toast.LENGTH_SHORT).show();
+
         requireActivity().getSupportFragmentManager().popBackStack();
     }
     
@@ -323,9 +354,15 @@ public class RecordingFragment extends Fragment implements
     @Override
     public void onTextRecognized(String newText, String fullText) {
         requireActivity().runOnUiThread(() -> {
-            // Анализ текста и создание блока
-            ContentBlock block = analyzerService.analyzeText(newText, 
-                System.currentTimeMillis() - recordingStartTime);
+            // Сначала моды (цепочка BlockHandler), затем встроенный анализатор ядра
+            ContentBlock block = com.example.lector.plugin.PluginManager
+                .getInstance(requireContext()).getRegistry()
+                .handleText(newText, System.currentTimeMillis() - recordingStartTime);
+
+            if (block == null) {
+                block = analyzerService.analyzeText(newText,
+                    System.currentTimeMillis() - recordingStartTime);
+            }
             
             if (block != null) {
                 // Определение спикера
@@ -333,6 +370,13 @@ public class RecordingFragment extends Fragment implements
                 contentBlocks.add(block);
                 blockAdapter.notifyDataSetChanged();
                 
+
+                // События для модов
+                com.example.lector.plugin.EventBus bus =
+                    com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                        .getEventBus();
+                bus.publish(com.example.lector.plugin.EventBus.Event.TRANSCRIPTION_RECEIVED, newText);
+                bus.publish(com.example.lector.plugin.EventBus.Event.BLOCK_ADDED, block);
                 // Прокрутка к новому блоку
                 binding.recyclerViewContent.scrollToPosition(contentBlocks.size() - 1);
             }

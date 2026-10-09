@@ -1,5 +1,7 @@
 package com.example.lector.models;
 
+import org.json.JSONObject;
+
 import com.example.lector.utils.NumberUtils;
 
 /**
@@ -7,7 +9,7 @@ import com.example.lector.utils.NumberUtils;
  * Преобразует устные формулы в структурированный вид.
  * Пример: "два плюс три равно пять" → "2 + 3 = 5"
  */
-public class MathBlock extends ContentBlock {
+public class MathBlock extends ContentBlock implements BlockSerializer {
     private String originalText;      // Как было сказано
     private String latexExpression;   // LaTeX представление
     private String plainExpression;   // Простой текст (2+3=5)
@@ -77,20 +79,34 @@ public class MathBlock extends ContentBlock {
     public MathType getMathType() { return mathType; }
 
     @Override
+    public JSONObject toJson() {
+        JSONObject json = super.toJson();
+        try {
+            json.put("originalText", originalText);
+            json.put("latexExpression", latexExpression);
+            json.put("plainExpression", plainExpression);
+            json.put("mathType", mathType.name());
+        } catch (Exception ignored) {}
+        return json;
+    }
+
+    public static MathBlock fromJson(JSONObject json, long timestamp) {
+        // Восстанавливаем из уже разобранного выражения, не пере-парся оригинал
+        String savedId = json.optString("id", null);
+        MathBlock b = new MathBlock(json.optString("originalText", ""), timestamp);
+        if (savedId != null) b.id = savedId;
+        b.plainExpression = json.optString("plainExpression", b.plainExpression);
+        b.latexExpression = json.optString("latexExpression", b.latexExpression);
+        String mt = json.optString("mathType", null);
+        if (mt != null) {
+            try { b.mathType = MathType.valueOf(mt); } catch (Exception ignored) {}
+        }
+        b.applyBaseJson(json);
+        return b;
+    }
+
+    @Override
     public String toMarkdown() {
         return "```\n" + plainExpression + "\n```";
     }
-}
-
-/**
- * Типы математических выражений
- */
-enum MathType {
-    EXPRESSION,  // Простое выражение
-    EQUATION,    // Уравнение
-    POWER,       // Степень
-    SQRT,        // Корень
-    FRACTION,    // Дробь
-    INTEGRAL,    // Интеграл
-    DERIVATIVE   // Производная
 }

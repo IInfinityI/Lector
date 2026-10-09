@@ -1,5 +1,7 @@
 package com.example.lector.models;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +9,7 @@ import java.util.List;
  * Блок заголовка (H1, H2 и т.д.)
  * Используется для структурирования конспекта.
  */
-public class HeadingBlock extends ContentBlock {
+public class HeadingBlock extends ContentBlock implements BlockSerializer {
     private String text;
     private int level; // 1 = H1, 2 = H2, и т.д.
 
@@ -28,6 +30,25 @@ public class HeadingBlock extends ContentBlock {
     public void setLevel(int level) { this.level = level; }
 
     @Override
+    public JSONObject toJson() {
+        JSONObject json = super.toJson();
+        try {
+            json.put("text", getText());
+            json.put("level", getLevel());
+        } catch (Exception ignored) {}
+        return json;
+    }
+
+    public static HeadingBlock fromJson(JSONObject json, long timestamp) {
+        String savedId = json.optString("id", null);
+        HeadingBlock b = new HeadingBlock(json.optString("text", ""), timestamp,
+            json.optInt("level", 1));
+        if (savedId != null) b.id = savedId;
+        b.applyBaseJson(json);
+        return b;
+    }
+
+    @Override
     public String toMarkdown() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < level; i++) {
@@ -38,69 +59,3 @@ public class HeadingBlock extends ContentBlock {
     }
 }
 
-/**
- * Блок подзаголовка (алиас для HeadingBlock с уровнем 2)
- */
-class SubheadingBlock extends HeadingBlock {
-    public SubheadingBlock(String text, long timestamp) {
-        super(text, timestamp, 2);
-    }
-
-    @Override
-    public BlockType getType() {
-        return BlockType.SUBHEADING;
-    }
-}
-
-/**
- * Блок абзаца с форматированием
- */
-class ParagraphBlock extends TextBlock {
-    private boolean isBold;
-    private boolean isItalic;
-    private TextAlignment alignment;
-
-    public ParagraphBlock(String text, long timestamp) {
-        super(text, timestamp);
-        this.isBold = false;
-        this.isItalic = false;
-        this.alignment = TextAlignment.LEFT;
-    }
-
-    @Override
-    public BlockType getType() {
-        return BlockType.PARAGRAPH;
-    }
-
-    public boolean isBold() { return isBold; }
-    public void setBold(boolean bold) { isBold = bold; }
-    public boolean isItalic() { return isItalic; }
-    public void setItalic(boolean italic) { isItalic = italic; }
-    public TextAlignment getAlignment() { return alignment; }
-    public void setAlignment(TextAlignment alignment) { this.alignment = alignment; }
-
-    @Override
-    public String toMarkdown() {
-        String text = getText();
-        
-        if (isBold && isItalic) {
-            text = "***" + text + "***";
-        } else if (isBold) {
-            text = "**" + text + "**";
-        } else if (isItalic) {
-            text = "*" + text + "*";
-        }
-        
-        return text;
-    }
-}
-
-/**
- * Выравнивание текста
- */
-enum TextAlignment {
-    LEFT,
-    CENTER,
-    RIGHT,
-    JUSTIFY
-}

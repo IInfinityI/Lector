@@ -97,19 +97,25 @@ public class ContentBlockAdapter extends RecyclerView.Adapter<ContentBlockAdapte
             // Контент в зависимости от типа блока
             if (block instanceof HeadingBlock) {
                 HeadingBlock heading = (HeadingBlock) block;
-                textContent.setText(heading.getContent());
+                textContent.setText(heading.getText());
                 textContent.setTextSize(18);
-                textContent.setTextStyle(android.graphics.Typeface.BOLD);
+                textContent.setTypeface(null, android.graphics.Typeface.BOLD);
             } else if (block instanceof MathBlock) {
                 MathBlock math = (MathBlock) block;
-                textContent.setText(math.getExpression());
+                textContent.setText(math.getPlainExpression());
                 textContent.setTextColor(
                     itemView.getContext().getResources().getColor(R.color.block_math));
+            } else if (block instanceof com.example.lector.plugin.builtin.HighlightBlock) {
+                com.example.lector.plugin.builtin.HighlightBlock hl =
+                    (com.example.lector.plugin.builtin.HighlightBlock) block;
+                textContent.setText(hl.getText());
+                textContent.setTypeface(null, android.graphics.Typeface.BOLD);
+                textContent.setBackgroundColor(hl.parseColor());
             } else if (block instanceof TextBlock) {
                 TextBlock text = (TextBlock) block;
                 textContent.setText(text.getText());
                 textContent.setTextSize(14);
-                textContent.setTextStyle(android.graphics.Typeface.NORMAL);
+                textContent.setTypeface(null, android.graphics.Typeface.NORMAL);
             } else {
                 textContent.setText(block.toMarkdown());
             }

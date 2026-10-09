@@ -32,8 +32,15 @@ public class Lecture implements Serializable {
     }
 
     public String getId() { return id; }
+    /** Восстановление идентификатора при загрузке из хранилища. */
+    public void setId(String id) { this.id = id; }
     public String getSubject() { return subject; }
     public void setSubject(String subject) { this.subject = subject; }
+
+    /** Название с защитой от null — безопасно для UI и экспорта. */
+    public String getSubjectSafe() {
+        return subject != null && !subject.isEmpty() ? subject : "Лекция";
+    }
     public long getDate() { return date; }
     public void setDate(long date) { this.date = date; }
     public String getAudioPath() { return audioPath; }
@@ -163,47 +170,5 @@ public class Lecture implements Serializable {
         long minutes = (seconds % 3600) / 60;
         long secs = seconds % 60;
         return String.format("%02d:%02d:%02d", hours, minutes, secs);
-    }
-}
-
-/**
- * Модель спикера для Speaker Diarization
- */
-class Speaker implements Serializable {
-    private int id;
-    private String name;
-    private int color; // Цвет для отображения в UI
-    private int totalSpeakingTime; // Общее время речи (мс)
-
-    public Speaker(int id, String name) {
-        this.id = id;
-        this.name = name;
-        this.color = generateColor(id);
-        this.totalSpeakingTime = 0;
-    }
-
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public int getColor() { return color; }
-    public void setColor(int color) { this.color = color; }
-    public int getTotalSpeakingTime() { return totalSpeakingTime; }
-    public void setTotalSpeakingTime(int totalSpeakingTime) { this.totalSpeakingTime = totalSpeakingTime; }
-    
-    public void addSpeakingTime(int ms) {
-        this.totalSpeakingTime += ms;
-    }
-
-    private int generateColor(int seed) {
-        // Генерируем приятные цвета для разных спикеров
-        int[] colors = {
-            0xFF2196F3, // Синий
-            0xFF4CAF50, // Зеленый
-            0xFFFF9800, // Оранжевый
-            0xFF9C27B0, // Фиолетовый
-            0xFFF44336  // Красный
-        };
-        return colors[seed % colors.length];
     }
 }

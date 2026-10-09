@@ -19,6 +19,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.lector.databinding.ActivityMainBinding;
+import com.example.lector.plugin.PluginManager;
 
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,6 +33,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+
+        // Инициализация системы модов до загрузки любого UI
+        PluginManager.getInstance(this).initialize();
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -80,6 +84,15 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            return true;
+        }
+
+        if (id == R.id.action_plugins) {
+            getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.nav_host_fragment_content_main, new PluginsFragment())
+                .addToBackStack(null)
+                .commit();
             return true;
         }
 
