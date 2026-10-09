@@ -42,6 +42,8 @@ public class PluginRegistry {
     private final List<BlockHandler> blockHandlers = new ArrayList<>();
     private final Map<String, FormattingCommand> formattingCommands = new HashMap<>();
     private final List<PostProcessor> postProcessors = new ArrayList<>();
+    private final Map<String, Exporter> exporters = new HashMap<>();
+    private final List<ToolbarAction> toolbarActions = new ArrayList<>();
 
     /** Регистрация нового типа блока плагином (аналог добавления предмета/блока в игру). */
     public void registerBlockType(String key, LectorPlugin owner, BlockFactory factory) {
@@ -72,6 +74,32 @@ public class PluginRegistry {
             }
         }
         return block.toMarkdown();
+    }
+
+    /** Регистрация экспортёра формата (PDF/DOCX/HTML и т.д.) — плагинный формат экспорта. */
+    public void registerExporter(Exporter exporter) {
+        if (exporter == null || exporter.getFormat() == null) return;
+        exporters.put(exporter.getFormat().getId().toLowerCase(), exporter);
+    }
+
+    /** Все доступные форматы экспорта (включая встроенный Markdown, id="markdown"). */
+    public java.util.List<ExportFormat> getAvailableFormats() {
+        java.util.List<ExportFormat> list = new java.util.ArrayList<>();
+        list.add(MarkdownExporter.FORMAT);
+        for (Exporter e : exporters.values()) {
+            if (!e.getFormat().getId().equalsIgnoreCase("markdown")) {
+                list.add(e.getFormat());
+            }
+        }
+        return list;
+    }
+
+    /** Экспортёр по id формата; null если формат не найден. */
+    public Exporter getExporter(String formatId) {
+        if (formatId == null) return null;
+        String key = formatId.toLowerCase();
+        if (key.equals("markdown")) return new MarkdownExporter();
+        return exporters.get(key);
     }
 
     /** Создание блока кастомного типа по ключу; null если тип неизвестен. */
@@ -148,6 +176,31 @@ public class PluginRegistry {
 
     public List<PostProcessor> getPostProcessors() {
         return new ArrayList<>(postProcessors);
+    }
+
+    /** Регистрация плагинной кнопки на панели инструментов редактора. */
+    public void registerToolbarAction(ToolbarAction action) {
+        if (action != null && action.getLabel() != null && !action.getLabel().isEmpty()) {
+            toolbarActions.add(action);
+        }
+    }
+
+    /** Видимые действия, отсортированные по order (для отрисовки тулбара). */
+    public List<ToolbarAction> getVisibleToolbarActions(com.example.lector.models.Lecture lecture) {
+        List<ToolbarAction> visible = new ArrayList<>();
+        for (ToolbarAction a : toolbarActions) {
+            try {
+                if (a.isVisible(lecture)) visible.add(a);
+            } catch (Exception ignored) {
+                // Сбой плагина не должен ломать тулбар
+            }
+        }
+        java.util.Collections.sort(visible, (x, y) -> Integer.compare(x.getOrder(), y.getOrder()));
+        return visible;
+    }
+
+    public List<ToolbarAction> getToolbarActions() {
+        return new ArrayList<>(toolbarActions);
     }
 
     /** Регистрация устной команды форматирования. */

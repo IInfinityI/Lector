@@ -84,4 +84,19 @@
         app:backgroundTint="@color/lector_primary"
         app:elevation="6dp" />
 
+    <!-- Импорт аудиофайла (транскрибирование готовой записи) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_import_audio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="96dp"
+        app:fabSize="mini"
+        android:contentDescription="Импорт аудиофайла"
+        android:src="@android:drawable/ic_menu_upload"
+        app:tint="@color/white"
+        app:backgroundTint="@color/lector_secondary"
+        app:elevation="4dp" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

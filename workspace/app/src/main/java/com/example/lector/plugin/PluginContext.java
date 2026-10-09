@@ -17,11 +17,14 @@ public class PluginContext {
 
     private final Context appContext;
     private final File pluginDataDir;
+    private final PluginSettings settings;
     private Lecture lecture;
 
     public PluginContext(Context appContext, File pluginDataDir) {
         this.appContext = appContext;
         this.pluginDataDir = pluginDataDir;
+        String id = pluginDataDir != null ? pluginDataDir.getName() : "core";
+        this.settings = new PluginSettings(appContext, id);
     }
 
     /** Android-контекст приложения (для ресурсов, файловых операций). */
@@ -29,6 +32,9 @@ public class PluginContext {
 
     /** Изолированная директория данных плагина: filesDir/plugins/<id>. */
     public File getPluginDataDir() { return pluginDataDir; }
+
+    /** Типизированные настройки мода (v1.4), объявленные через LectorPlugin.getSettings(). */
+    public PluginSettings getSettings() { return settings; }
 
     /** Текущая редактируемая лекция (может быть null вне редактора). */
     public Lecture getLecture() { return lecture; }

@@ -92,26 +92,42 @@
                 android:ellipsize="end"
                 android:text="" />
 
-            <TextView
-                android:id="@+id/transcription_hint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/lector_accent"
-                android:textStyle="italic"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:text="" />
-
         </LinearLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Список блоков контента -->
+    <!-- Живая лента записи в реальном времени (подтверждённые строки + печатающийся текст) -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/live_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/lector_background"
+        android:fillViewport="true"
+        android:paddingTop="120dp"
+        android:paddingBottom="170dp"
+        android:clipToPadding="false"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <TextView
+            android:id="@+id/tv_live_transcript"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:textSize="18sp"
+            android:lineSpacingExtra="6dp"
+            android:textIsSelectable="true"
+            android:typeface="monospace"
+            android:textColor="@color/lector_text_primary"
+            android:text="" />
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Структурированный список блоков (виден после остановки записи) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="gone"
         android:clipToPadding="false"
         android:paddingTop="140dp"
         android:paddingBottom="160dp"

@@ -41,6 +41,7 @@ public class PluginManager {
 
     private PluginRegistry registry;
     private EventBus eventBus;
+    private final Map<String, PluginContext> contexts = new LinkedHashMap<>();
 
     private PluginManager(Context context) {
         this.appContext = context.getApplicationContext();
@@ -70,12 +71,15 @@ public class PluginManager {
                 File dir = new File(pluginsRootDir, plugin.getId());
                 if (!dir.exists()) dir.mkdirs();
                 PluginContext ctx = new PluginContext(appContext, dir);
+                contexts.put(plugin.getId(), ctx);
                 plugin.onInit(ctx);
                 plugin.onRegister(registry);
                 // Автоматическая регистрация декларативных возможностей плагина
                 for (BlockHandler h : plugin.getBlockHandlers()) registry.registerBlockHandler(h);
                 for (FormattingCommand c : plugin.getFormattingCommands()) registry.registerFormattingCommand(c);
                 for (PostProcessor p : plugin.getPostProcessors()) registry.registerPostProcessor(p);
+                for (Exporter ex : plugin.getExporters()) registry.registerExporter(ex);
+                for (ToolbarAction ta : plugin.getToolbarActions()) registry.registerToolbarAction(ta);
                 plugin.subscribe(eventBus);
                 Log.i(TAG, "Плагин загружен: " + plugin.getId() + " v" + plugin.getVersion());
             } catch (Exception e) {
@@ -87,6 +91,33 @@ public class PluginManager {
 
     public PluginRegistry getRegistry() { initialize(); return registry; }
     public EventBus getEventBus() { initialize(); return eventBus; }
+
+    /** Контекст загруженного плагина (песочница + данные); null если плагин не загружен. */
+    public PluginContext getContextFor(String pluginId) {
+        initialize();
+        return contexts.get(pluginId);
+    }
+
+    /**
+     * Выполнить плагинное действие тулбара с контекстом его владельца-плагина.
+     * Ядро вызывает это при нажатии на плагинную кнопку в редакторе.
+     */
+    public void runToolbarAction(ToolbarAction action, com.example.lector.models.Lecture lecture) {
+        if (action == null) return;
+        // Контекст того плагина, который зарегистрировал действие; иначе — общий
+        PluginContext ctx = null;
+        for (Map.Entry<String, PluginContext> e : contexts.entrySet()) {
+            LectorPlugin p = loaded.get(e.getKey());
+            if (p != null && p.getToolbarActions().contains(action)) { ctx = e.getValue(); break; }
+        }
+        if (ctx == null) ctx = new PluginContext(appContext, pluginsRootDir);
+        try {
+            action.onClick(lecture, ctx);
+        } catch (Exception e) {
+            Log.e(TAG, "Toolbar action failed: " + action.getLabel(), e);
+        }
+    }
+
     public List<LectorPlugin> getLoadedPlugins() {
         initialize();
         return new ArrayList<>(loaded.values());

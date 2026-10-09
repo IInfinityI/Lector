@@ -7,6 +7,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -118,6 +119,9 @@ public class EditorFragment extends Fragment {
             com.example.lector.plugin.PluginManager.getInstance(requireContext()).getRegistry());
         binding.recyclerViewBlocks.setAdapter(blockAdapter);
 
+        // UI-слот v1.3: кнопки модов на панели инструментов редактора
+        buildPluginToolbar();
+
         if (lecture.getNotes() != null) {
             binding.editNotes.setText(lecture.getNotes());
         }
@@ -206,6 +210,43 @@ public class EditorFragment extends Fragment {
         }
     }
 
+    /**
+     * UI-слот v1.3: модале добавляет кнопки в тулбар редактора через ToolbarAction.
+     * Ядро просто превращает зарегистрированные действия в MaterialButton'ы.
+     */
+    private void buildPluginToolbar() {
+        if (binding == null || lecture == null) return;
+        android.widget.LinearLayout container = binding.pluginToolbarContainer;
+        container.removeAllViews();
+
+        com.example.lector.plugin.PluginManager pm =
+            com.example.lector.plugin.PluginManager.getInstance(requireContext());
+        java.util.List<com.example.lector.plugin.ToolbarAction> actions =
+            pm.getRegistry().getVisibleToolbarActions(lecture);
+
+        for (final com.example.lector.plugin.ToolbarAction action : actions) {
+            com.google.android.material.button.MaterialButton btn =
+                new com.google.android.material.button.MaterialButton(requireContext());
+            btn.setText(action.getLabel());
+            btn.setTextSize(12f);
+            btn.setPadding(8, 0, 8, 0);
+            if (action.getIconResId() != 0) {
+                try {
+                    btn.setIconResource(action.getIconResId());
+                    btn.setIconGravity(
+                        com.google.android.material.button.MaterialButton.ICON_GRAVITY_TEXT_START);
+                } catch (Exception ignored) { }
+            }
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(8);
+            btn.setLayoutParams(lp);
+            btn.setOnClickListener(v -> pm.runToolbarAction(action, lecture));
+            container.addView(btn);
+        }
+    }
+
     private void stopTicker() {
         uiHandler.removeCallbacks(progressTicker);
     }
@@ -243,16 +284,38 @@ public class EditorFragment extends Fragment {
             repository.save(lecture);
         }
 
-        String markdown = lecture.toMarkdown(
+        final String markdown = lecture.toMarkdown(
             com.example.lector.plugin.PluginManager.getInstance(requireContext()).getRegistry());
+
+        // Список форматов: Markdown ядра + все плагинные экспортёры (PDF и т.д.)
+        final java.util.List<com.example.lector.plugin.ExportFormat> formats =
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getRegistry().getAvailableFormats();
+        String[] names = new String[formats.size()];
+        for (int i = 0; i < formats.size(); i++) names[i] = formats.get(i).getDisplayName();
+
+        new android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Экспорт лекции")
+            .setItems(names, (dialog, which) -> doExport(formats.get(which), markdown))
+            .show();
+    }
+
+    private void doExport(com.example.lector.plugin.ExportFormat format, String markdown) {
+        com.example.lector.plugin.Exporter exporter =
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getRegistry().getExporter(format.getId());
+        if (exporter == null) {
+            Toast.makeText(getContext(), "Формат не поддерживается", Toast.LENGTH_SHORT).show();
+            return;
+        }
         File dir = new File(requireContext().getExternalFilesDir(null), "exports");
         if (!dir.exists()) dir.mkdirs();
         File out = new File(dir, lecture.getSubjectSafe().replaceAll("[^\\w\\u0400-\\u04FF -]", "_")
-            + ".md");
-        try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), "UTF-8")) {
-            w.write(markdown);
-            Toast.makeText(getContext(), "Экспортировано в " + out.getName(),
-                Toast.LENGTH_LONG).show();
+            + format.getFileExtension());
+        try {
+            boolean ok = exporter.export(lecture, markdown, out);
+            Toast.makeText(getContext(), ok ? "Экспортировано в " + out.getName()
+                    : "Экспорт не удался", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(getContext(), "Ошибка экспорта: " + e.getMessage(),
                 Toast.LENGTH_LONG).show();

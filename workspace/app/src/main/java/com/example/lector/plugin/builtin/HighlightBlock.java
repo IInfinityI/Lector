@@ -17,6 +17,7 @@ public class HighlightBlock extends ContentBlock implements BlockSerializer {
 
     private String text;
     private String color; // "yellow", "green", "blue"… задаётся плагином
+    private String note;  // демо v1.4: мод сохраняет сюда значение своей настройки
 
     public HighlightBlock(String text, long timestamp) {
         this(text, timestamp, "yellow");
@@ -42,6 +43,8 @@ public class HighlightBlock extends ContentBlock implements BlockSerializer {
     public void setText(String text) { this.text = text; }
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 
     /** ARGB-цвет выделения по имени (расширяется плагинами). */
     public int parseColor() {
@@ -61,6 +64,7 @@ public class HighlightBlock extends ContentBlock implements BlockSerializer {
         try {
             json.put("text", text);
             json.put("color", color);
+            if (note != null) json.put("note", note);
         } catch (Exception ignored) {}
         return json;
     }
@@ -68,6 +72,7 @@ public class HighlightBlock extends ContentBlock implements BlockSerializer {
     public static HighlightBlock fromJson(JSONObject json, long timestamp) {
         HighlightBlock b = new HighlightBlock(json.optString("text", ""), timestamp,
             json.optString("color", "yellow"));
+        b.note = json.optString("note", null);
         String savedId = json.optString("id", null);
         if (savedId != null) b.id = savedId;
         b.applyBaseJson(json);

@@ -190,6 +190,8 @@
     <string name="plugins_import">Установить мод (.jar/.dex)</string>
     <string name="plugins_installed">Установленные моды</string>
     <string name="plugins_error">Ошибка загрузки мода</string>
+    <string name="plugins_settings_title">Настройки мода</string>
+    <string name="plugins_settings_reset">Сбросить настройки</string>
     <string name="action_plugins">Моды</string>
 
     <!-- Common Strings -->

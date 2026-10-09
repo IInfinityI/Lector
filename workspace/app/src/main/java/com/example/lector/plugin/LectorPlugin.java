@@ -47,6 +47,19 @@ public interface LectorPlugin {
     /** Процессоры пост-обработки, применяемые к лекции после остановки записи. */
     default List<PostProcessor> getPostProcessors() { return Collections.emptyList(); }
 
+    /** Плагинные форматы экспорта (PDF, DOCX, HTML...). Markdown встроен в ядро. */
+    default List<Exporter> getExporters() { return Collections.emptyList(); }
+
+    /** Плагинные кнопки на панели инструментов редактора (UI-слот v1.3). */
+    default List<ToolbarAction> getToolbarActions() { return Collections.emptyList(); }
+
+    /**
+     * Декларация настроек мода (UI-слот v1.4). Ядро автоматически рисует
+     * панель конфигурации на экране «Моды»; значения доступны плагину
+     * через {@link PluginContext#getSettings()}.
+     */
+    default List<PluginSettings.SettingDescriptor> getSettings() { return Collections.emptyList(); }
+
     /** Подписка на события ядра (начало/конец записи, сохранение лекции). */
     default void subscribe(EventBus bus) { }
 
