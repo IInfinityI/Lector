@@ -58,7 +58,10 @@ public class PluginRegistry {
         RegisteredType rt = blockTypes.get(key.toUpperCase());
         if (rt == null) return null;
         try {
-            return rt.factory.fromJson(json, timestamp);
+            ContentBlock b = rt.factory.fromJson(json, timestamp);
+            // Если factory не проставил таймкод из JSON — используем переданный
+            if (b != null && b.getTimestamp() <= 0) b.setTimestamp(timestamp);
+            return b;
         } catch (Exception e) {
             return null;
         }
