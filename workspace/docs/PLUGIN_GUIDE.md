@@ -90,8 +90,19 @@ public void subscribe(EventBus bus) {
    ```
 2. **Gradle-модуль + ServiceLoader** — отдельный модуль с файлом
    `META-INF/services/com.example.lector.plugin.LectorPlugin`, содержащим имя класса.
-3. **Динамическая загрузка DEX/JAR** — файл кладётся в `filesDir/plugins_ext/`,
-   загружается через `DexClassLoader` (предусмотрено в `PluginManager`).
+3. **Динамическая загрузка DEX/JAR** — самый простой путь для пользователя:
+   в разделе **«Моды»** нажмите «Импортировать мод» и выберите файл `.jar`/`.dex`.
+   Файл копируется в `filesDir/plugins_ext/`, а при следующем запуске приложения
+   загружается через `DexClassLoader`. Требования к архиву:
+   - скомпилирован против API Lector (интерфейс `LectorPlugin` не должен меняться);
+   - в корне архива (или в `assets/`) лежит манифест `plugin.json`:
+     ```json
+     { "id": "org.example.mymod", "class": "org.example.mymod.MyMod" }
+     ```
+   - класс из `class` имеет публичный конструктор без аргументов.
+
+   Проверка совместимости: если мод запрашивает `getApiVersion()` выше, чем
+   `PLUGIN_API_VERSION` ядра, он не будет загружен (ошибка видна в списке модов).
 
 Моды можно включать/выключать в разделе **«Моды»** (PluginsFragment) — состояние
 хранится в SharedPreferences.
