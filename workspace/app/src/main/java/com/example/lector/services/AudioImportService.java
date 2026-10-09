@@ -19,6 +19,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Импорт и транскрибирование готовых аудиофайлов (записанных лекций, подкастов).
@@ -49,12 +51,52 @@ public class AudioImportService {
 
     /** Импортирует audio-файл из SAF (ACTION_OPEN_DOCUMENT) и запускает транскрибирование. */
     public void importAndTranscribe(Uri uri, String subjectHint, Callback callback) {
+        String name = queryDisplayName(uri);
+        importInternal(name != null ? name : "imported.m4a", uri, null, subjectHint, callback);
+    }
+
+    /**
+     * Пакетный режим: транскрибировать несколько файлов последовательно в одном фоне.
+     * @param uris список audio-файлов (SAF); пустые/недоступные пропускаются с ошибкой в логе прогресса
+     */
+    public void importBatch(java.util.List<Uri> uris, Callback callback) {
+        executor.execute(() -> {
+            int total = uris.size(), done = 0;
+            for (int i = 0; i < total; i++) {
+                final int idx = i;
+                Uri uri = uris.get(i);
+                String name = queryDisplayName(uri);
+                if (name == null || name.isEmpty()) name = "imported_" + (idx + 1) + ".m4a";
+                final String fn = name;
+                CountDownLatch latch = new CountDownLatch(1);
+                final boolean[] ok = {false};
+                importInternal(fn, uri, () -> latch.countDown(), null, new Callback() {
+                    @Override public void onProgress(float p, String d) {
+                        callbackOn(callback, (idx + p) / Math.max(1, total),
+                            "[" + (idx + 1) + "/" + total + "] " + fn + ": " + d);
+                    }
+                    @Override public void onFinished(Lecture l) { ok[0] = true; latch.countDown(); }
+                    @Override public void onError(String m) {
+                        callbackOn(callback, (idx + 1f) / total,
+                            "[" + (idx + 1) + "/" + total + "] " + fn + ": " + m);
+                        latch.countDown();
+                    }
+                });
+                try { latch.await(30, TimeUnit.MINUTES); } catch (InterruptedException e) { break; }
+                done++;
+            }
+            callback.onFinished(null);
+        });
+    }
+
+    private void importInternal(String displayNameIn, Uri uri, Runnable onFinish,
+                                String subjectHint, Callback callback) {
+        final String displayName =
+            (displayNameIn != null && !displayNameIn.isEmpty()) ? displayNameIn : "imported.m4a";
         executor.execute(() -> {
             try {
                 // 1. Копируем файл во внутреннее хранилище
                 callbackOn(callback, 0.05f, "Копирование файла...");
-                String displayName = queryDisplayName(uri);
-                if (displayName == null || displayName.isEmpty()) displayName = "imported.m4a";
                 File dest = new File(context.getFilesDir(), "audio/" + System.currentTimeMillis() + "_" + displayName);
                 dest.getParentFile().mkdirs();
                 copyUriToFile(uri, dest);
@@ -89,6 +131,8 @@ public class AudioImportService {
             } catch (Exception e) {
                 Log.e(TAG, "import failed", e);
                 callback.onError("Ошибка импорта: " + e.getMessage());
+            } finally {
+                if (onFinish != null) onFinish.run();
             }
         });
     }

@@ -79,6 +79,7 @@ public class LectureListFragment extends Fragment {
         Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         pick.addCategory(Intent.CATEGORY_OPENABLE);
         pick.setType("audio/*");
+        pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // пакетный режим: можно выбрать несколько файлов
         try {
             startActivityForResult(pick, IMPORT_AUDIO_REQUEST);
         } catch (Exception e) {
@@ -91,42 +92,59 @@ public class LectureListFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != IMPORT_AUDIO_REQUEST || resultCode != android.app.Activity.RESULT_OK
-                || data == null || data.getData() == null) return;
+                || data == null) return;
         if (!checkPermissions()) { requestPermissions(); return; }
 
+        java.util.List<android.net.Uri> uris = new java.util.ArrayList<>();
+        if (data.getClipData() != null) {
+            android.content.ClipData clip = data.getClipData();
+            for (int i = 0; i < clip.getItemCount(); i++) uris.add(clip.getItemAt(i).getUri());
+        } else if (data.getData() != null) {
+            uris.add(data.getData());
+        }
+        if (uris.isEmpty()) return;
+
         android.app.ProgressDialog pd = new android.app.ProgressDialog(requireContext());
-        pd.setTitle("Транскрибирование");
+        pd.setTitle(uris.size() > 1 ? "Пакетное транскрибирование" : "Транскрибирование");
         pd.setMessage("Подготовка...");
         pd.setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL);
         pd.setMax(100);
         pd.setCancelable(false);
         pd.show();
 
-        new com.example.lector.services.AudioImportService(requireContext())
-            .importAndTranscribe(data.getData(), null,
-                new com.example.lector.services.AudioImportService.Callback() {
-                    @Override
-                    public void onProgress(float progress, String description) {
-                        if (!isAdded() || !pd.isShowing()) return;
-                        pd.setMessage(description);
-                        pd.setProgress((int) (progress * 100));
-                    }
-                    @Override
-                    public void onFinished(com.example.lector.models.Lecture lecture) {
-                        if (!isAdded()) return;
-                        pd.dismiss();
+        com.example.lector.services.AudioImportService svc =
+            new com.example.lector.services.AudioImportService(requireContext());
+        com.example.lector.services.AudioImportService.Callback cb =
+            new com.example.lector.services.AudioImportService.Callback() {
+                @Override
+                public void onProgress(float progress, String description) {
+                    if (!isAdded() || !pd.isShowing()) return;
+                    pd.setMessage(description);
+                    pd.setProgress((int) (progress * 100));
+                }
+                @Override
+                public void onFinished(com.example.lector.models.Lecture lecture) {
+                    if (!isAdded()) return;
+                    pd.dismiss();
+                    if (lecture != null) {
                         Toast.makeText(getContext(),
                             "Готово: распознано блоков — " + lecture.getBlocks().size(),
                             Toast.LENGTH_LONG).show();
-                        loadLectures();
+                    } else {
+                        Toast.makeText(getContext(), "Пакетная обработка завершена",
+                            Toast.LENGTH_LONG).show();
                     }
-                    @Override
-                    public void onError(String message) {
-                        if (!isAdded()) return;
-                        pd.dismiss();
-                        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
-                    }
-                });
+                    loadLectures();
+                }
+                @Override
+                public void onError(String message) {
+                    if (!isAdded()) return;
+                    pd.dismiss();
+                    Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+                }
+            };
+        if (uris.size() > 1) svc.importBatch(uris, cb);
+        else svc.importAndTranscribe(uris.get(0), null, cb);
     }
     
     private void setupRecyclerView() {
