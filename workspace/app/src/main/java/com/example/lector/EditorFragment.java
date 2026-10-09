@@ -7,6 +7,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -118,6 +119,9 @@ public class EditorFragment extends Fragment {
             com.example.lector.plugin.PluginManager.getInstance(requireContext()).getRegistry());
         binding.recyclerViewBlocks.setAdapter(blockAdapter);
 
+        // UI-слот v1.3: кнопки модов на панели инструментов редактора
+        buildPluginToolbar();
+
         if (lecture.getNotes() != null) {
             binding.editNotes.setText(lecture.getNotes());
         }
@@ -203,6 +207,43 @@ public class EditorFragment extends Fragment {
         if (blockAdapter != null) blockAdapter.setPlayingTimestamp(timestampMs);
         if (!mediaPlayer.isPlaying()) {
             togglePlayPause(); // стартуем воспроизведение с выбранного места
+        }
+    }
+
+    /**
+     * UI-слот v1.3: модале добавляет кнопки в тулбар редактора через ToolbarAction.
+     * Ядро просто превращает зарегистрированные действия в MaterialButton'ы.
+     */
+    private void buildPluginToolbar() {
+        if (binding == null || lecture == null) return;
+        android.widget.LinearLayout container = binding.pluginToolbarContainer;
+        container.removeAllViews();
+
+        com.example.lector.plugin.PluginManager pm =
+            com.example.lector.plugin.PluginManager.getInstance(requireContext());
+        java.util.List<com.example.lector.plugin.ToolbarAction> actions =
+            pm.getRegistry().getVisibleToolbarActions(lecture);
+
+        for (final com.example.lector.plugin.ToolbarAction action : actions) {
+            com.google.android.material.button.MaterialButton btn =
+                new com.google.android.material.button.MaterialButton(requireContext());
+            btn.setText(action.getLabel());
+            btn.setTextSize(12f);
+            btn.setPadding(8, 0, 8, 0);
+            if (action.getIconResId() != 0) {
+                try {
+                    btn.setIconResource(action.getIconResId());
+                    btn.setIconGravity(
+                        com.google.android.material.button.MaterialButton.ICON_GRAVITY_TEXT_START);
+                } catch (Exception ignored) { }
+            }
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(8);
+            btn.setLayoutParams(lp);
+            btn.setOnClickListener(v -> pm.runToolbarAction(action, lecture));
+            container.addView(btn);
         }
     }
 

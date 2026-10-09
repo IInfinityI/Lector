@@ -16,6 +16,7 @@ import com.example.lector.plugin.Exporter;
 import com.example.lector.plugin.LectorPlugin;
 import com.example.lector.plugin.PluginContext;
 import com.example.lector.plugin.PluginRegistry;
+import com.example.lector.plugin.ToolbarAction;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -117,6 +118,47 @@ public class HighlighterPlugin implements LectorPlugin {
     @Override
     public void subscribe(EventBus bus) {
         // Демо: можно вести статистику выделений в свою песочницу
+    }
+
+    /**
+     * Демо UI-слота v1.3: кнопка «Тег #» в тулбаре редактора.
+     * Мод сам решает, что делать с лекцией — ядро только рисует кнопку.
+     */
+    @Override
+    public List<ToolbarAction> getToolbarActions() {
+        return Arrays.<ToolbarAction>asList(new ToolbarAction() {
+            @Override
+            public String getLabel() { return "Тег #"; }
+
+            @Override
+            public int getOrder() { return 10; }
+
+            @Override
+            public void onClick(com.example.lector.models.Lecture lecture, PluginContext context) {
+                if (lecture == null) return;
+                // Простой демо-эффект: добавить хештег-выделение последнему текстовому блоку
+                com.example.lector.models.ContentBlock last = null;
+                for (com.example.lector.models.ContentBlock b : lecture.getBlocks()) {
+                    if (b instanceof com.example.lector.models.TextBlock) last = b;
+                }
+                if (last != null) {
+                    String text = ((com.example.lector.models.TextBlock) last).getText();
+                    HighlightBlock hl = new HighlightBlock("#" + firstWord(text),
+                        last.getTimestamp(), "green");
+                    lecture.addBlock(hl);
+                    // Сохранение через контекст не нужно — ядро сохранит лекцию само;
+                    // плагин может использовать context.getPluginDataDir() для своих файлов
+                }
+            }
+
+            private String firstWord(String s) {
+                if (s == null || s.isEmpty()) return "идея";
+                String t = s.trim();
+                int sp = t.indexOf(' ');
+                String w = sp > 0 ? t.substring(0, sp) : t;
+                return w.replaceAll("[^\\p{L}\\d]", "");
+            }
+        });
     }
 
     /**

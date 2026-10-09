@@ -198,4 +198,54 @@ public class PluginRegistryTest {
         assertTrue(out.exists());
         assertNull(registry.getExporter("docx")); // несуществующий формат — null
     }
+
+    @Test
+    public void toolbarActions_sortByOrder_respectVisibility_andSurviveErrors() {
+        PluginRegistry registry = new PluginRegistry();
+
+        final boolean[] clicked = {false};
+        registry.registerToolbarAction(new ToolbarAction() {
+            @Override public String getLabel() { return "Позднее"; }
+            @Override public int getOrder() { return 50; }
+            @Override public void onClick(com.example.lector.models.Lecture l,
+                                          PluginContext c) { }
+        });
+        registry.registerToolbarAction(new ToolbarAction() {
+            @Override public String getLabel() { return "Раньше"; }
+            @Override public int getOrder() { return 1; }
+            @Override public void onClick(com.example.lector.models.Lecture l,
+                                          PluginContext c) { clicked[0] = true; }
+        });
+        registry.registerToolbarAction(new ToolbarAction() {
+            @Override public String getLabel() { return "Скрытый"; }
+            @Override public boolean isVisible(com.example.lector.models.Lecture l) {
+                throw new RuntimeException("мод упал");
+            }
+            @Override public void onClick(com.example.lector.models.Lecture l,
+                                          PluginContext c) { }
+        });
+
+        java.util.List<ToolbarAction> visible =
+            registry.getVisibleToolbarActions(null);
+        assertEquals(2, visible.size()); // падающий isVisible исключён, не сломал список
+        assertEquals("Раньше", visible.get(0).getLabel()); // сортировка по order
+        assertEquals("Позднее", visible.get(1).getLabel());
+
+        // Пустые метки не регистрируются (всего осталось 3 валидных из 4 попыток)
+        registry.registerToolbarAction(new ToolbarAction() {
+            @Override public String getLabel() { return ""; }
+            @Override public void onClick(com.example.lector.models.Lecture l,
+                                          PluginContext c) { }
+        });
+        assertEquals(3, registry.getToolbarActions().size());
+    }
+
+    @Test
+    public void highlighterPlugin_exposesToolbarAction() {
+        HighlighterPlugin plugin = new HighlighterPlugin();
+        java.util.List<ToolbarAction> actions = plugin.getToolbarActions();
+        assertFalse(actions.isEmpty());
+        assertEquals("Тег #", actions.get(0).getLabel());
+        assertTrue(actions.get(0).isVisible(null));
+    }
 }

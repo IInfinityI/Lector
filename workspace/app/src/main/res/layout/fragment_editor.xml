@@ -21,6 +21,15 @@
             app:title="Просмотр лекции"
             app:titleTextColor="@color/white" />
 
+        <!-- Плагинные кнопки (UI-слот модов): ядро наполняет этот контейнер -->
+        <LinearLayout
+            android:id="@+id/plugin_toolbar_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp" />
+
         <!-- Действия -->
         <LinearLayout
             android:layout_width="match_parent"

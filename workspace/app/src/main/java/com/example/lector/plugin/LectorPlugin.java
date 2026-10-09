@@ -50,6 +50,9 @@ public interface LectorPlugin {
     /** Плагинные форматы экспорта (PDF, DOCX, HTML...). Markdown встроен в ядро. */
     default List<Exporter> getExporters() { return Collections.emptyList(); }
 
+    /** Плагинные кнопки на панели инструментов редактора (UI-слот v1.3). */
+    default List<ToolbarAction> getToolbarActions() { return Collections.emptyList(); }
+
     /** Подписка на события ядра (начало/конец записи, сохранение лекции). */
     default void subscribe(EventBus bus) { }
 

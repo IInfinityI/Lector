@@ -43,6 +43,7 @@ public class PluginRegistry {
     private final Map<String, FormattingCommand> formattingCommands = new HashMap<>();
     private final List<PostProcessor> postProcessors = new ArrayList<>();
     private final Map<String, Exporter> exporters = new HashMap<>();
+    private final List<ToolbarAction> toolbarActions = new ArrayList<>();
 
     /** Регистрация нового типа блока плагином (аналог добавления предмета/блока в игру). */
     public void registerBlockType(String key, LectorPlugin owner, BlockFactory factory) {
@@ -175,6 +176,31 @@ public class PluginRegistry {
 
     public List<PostProcessor> getPostProcessors() {
         return new ArrayList<>(postProcessors);
+    }
+
+    /** Регистрация плагинной кнопки на панели инструментов редактора. */
+    public void registerToolbarAction(ToolbarAction action) {
+        if (action != null && action.getLabel() != null && !action.getLabel().isEmpty()) {
+            toolbarActions.add(action);
+        }
+    }
+
+    /** Видимые действия, отсортированные по order (для отрисовки тулбара). */
+    public List<ToolbarAction> getVisibleToolbarActions(com.example.lector.models.Lecture lecture) {
+        List<ToolbarAction> visible = new ArrayList<>();
+        for (ToolbarAction a : toolbarActions) {
+            try {
+                if (a.isVisible(lecture)) visible.add(a);
+            } catch (Exception ignored) {
+                // Сбой плагина не должен ломать тулбар
+            }
+        }
+        java.util.Collections.sort(visible, (x, y) -> Integer.compare(x.getOrder(), y.getOrder()));
+        return visible;
+    }
+
+    public List<ToolbarAction> getToolbarActions() {
+        return new ArrayList<>(toolbarActions);
     }
 
     /** Регистрация устной команды форматирования. */
