@@ -310,8 +310,16 @@ public class RecordingFragment extends Fragment implements
     }
     
     private void requestAudioPermission() {
+        java.util.List<String> needed = new java.util.ArrayList<>();
+        needed.add(Manifest.permission.RECORD_AUDIO);
+        // На Android 13+ без POST_NOTIFICATIONS уведомление фоновой записи не покажется
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
         ActivityCompat.requestPermissions(requireActivity(),
-            new String[]{Manifest.permission.RECORD_AUDIO},
+            needed.toArray(new String[0]),
             PERMISSION_REQUEST_CODE);
     }
 
