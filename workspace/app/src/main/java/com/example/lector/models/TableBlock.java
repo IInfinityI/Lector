@@ -1,5 +1,8 @@
 package com.example.lector.models;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +11,7 @@ import java.util.List;
  * Блок таблицы для хранения структурированных данных.
  * Поддерживает интерактивное редактирование и экспорт в Markdown.
  */
-public class TableBlock extends ContentBlock {
+public class TableBlock extends ContentBlock implements BlockSerializer {
     private List<List<String>> rows;
     private int columns;
     private String caption; // Заголовок таблицы
@@ -94,6 +97,48 @@ public class TableBlock extends ContentBlock {
     /**
      * Экспорт в Markdown формат
      */
+    @Override
+    public JSONObject toJson() {
+        JSONObject json = super.toJson();
+        try {
+            json.put("columns", columns);
+            json.put("caption", caption);
+            json.put("hasHeader", hasHeader);
+            JSONArray rowsArr = new JSONArray();
+            for (List<String> row : rows) {
+                JSONArray r = new JSONArray();
+                for (String cell : row) r.put(cell);
+                rowsArr.put(r);
+            }
+            json.put("rows", rowsArr);
+        } catch (Exception ignored) {}
+        return json;
+    }
+
+    public static TableBlock fromJson(JSONObject json, long timestamp) {
+        int cols = json.optInt("columns", 1);
+        JSONArray rowsArr = json.optJSONArray("rows");
+        int rowCount = rowsArr != null ? rowsArr.length() : 1;
+        String savedId = json.optString("id", null);
+        TableBlock b = new TableBlock(rowCount, cols, timestamp);
+        if (savedId != null) b.id = savedId;
+        b.caption = json.optString("caption", null);
+        b.hasHeader = json.optBoolean("hasHeader", false);
+        if (rowsArr != null) {
+            b.rows.clear();
+            for (int i = 0; i < rowsArr.length(); i++) {
+                JSONArray r = rowsArr.optJSONArray(i);
+                List<String> row = new ArrayList<>();
+                if (r != null) {
+                    for (int j = 0; j < r.length(); j++) row.add(r.optString(j, ""));
+                }
+                b.rows.add(row);
+            }
+        }
+        b.applyBaseJson(json);
+        return b;
+    }
+
     @Override
     public String toMarkdown() {
         StringBuilder sb = new StringBuilder();

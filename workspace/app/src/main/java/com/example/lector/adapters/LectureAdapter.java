@@ -62,7 +62,7 @@ public class LectureAdapter extends RecyclerView.Adapter<LectureAdapter.LectureV
         notifyDataSetChanged();
     }
     
-    static class LectureViewHolder extends RecyclerView.ViewHolder {
+    class LectureViewHolder extends RecyclerView.ViewHolder {
         private final TextView textSubject;
         private final TextView textDate;
         private final TextView textDuration;
@@ -79,11 +79,8 @@ public class LectureAdapter extends RecyclerView.Adapter<LectureAdapter.LectureV
             
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    LectureAdapter adapter = (LectureAdapter) getOwnerAdapter();
-                    if (adapter != null && adapter.listener != null) {
-                        adapter.listener.onLectureClick(adapter.lectureList.get(position));
-                    }
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    listener.onLectureClick(lectureList.get(position));
                 }
             });
         }

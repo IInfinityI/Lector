@@ -1,5 +1,8 @@
 package com.example.lector;
 
+import android.content.Intent;
+import android.os.Build;
+
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -142,11 +145,31 @@ public class RecordingFragment extends Fragment implements
             currentLecture = new Lecture(subject, System.currentTimeMillis());
             recorderService.startRecording(subject);
             transcriptionService.startListening();
+
+            // Foreground-сервис: запись не прерывается при сворачивании приложения
+            try {
+                Intent fg = new Intent(requireContext(),
+                        com.example.lector.services.RecordingForegroundService.class);
+                fg.putExtra(com.example.lector.services.RecordingForegroundService.EXTRA_PATH,
+                        recorderService.getCurrentOutputPath());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    requireContext().startForegroundService(fg);
+                } else {
+                    requireContext().startService(fg);
+                }
+            } catch (Exception ignored) {
+            }
             
             isRecording = true;
             isPaused = false;
             recordingStartTime = System.currentTimeMillis();
             
+
+            // Событие для модов: начало записи
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getEventBus().publish(
+                    com.example.lector.plugin.EventBus.Event.RECORDING_STARTED,
+                    currentLecture);
             updateUIForRecording();
             
         } catch (IOException e) {
@@ -158,10 +181,22 @@ public class RecordingFragment extends Fragment implements
     private void stopRecording() {
         recorderService.stopRecording();
         transcriptionService.stopListening();
+
+        try {
+            requireContext().stopService(new Intent(requireContext(),
+                    com.example.lector.services.RecordingForegroundService.class));
+        } catch (Exception ignored) {
+        }
         
         isRecording = false;
         isPaused = false;
         
+
+        // Событие для модов: конец записи
+        com.example.lector.plugin.PluginManager.getInstance(requireContext())
+            .getEventBus().publish(
+                com.example.lector.plugin.EventBus.Event.RECORDING_STOPPED,
+                currentLecture);
         updateUIForStopped();
     }
     
@@ -178,12 +213,37 @@ public class RecordingFragment extends Fragment implements
     }
     
     private void finishRecording() {
-        if (currentLecture != null) {
-            currentLecture.setBlocks(contentBlocks);
-            // Сохранение в базу данных
-            Toast.makeText(getContext(), "Лекция сохранена", Toast.LENGTH_SHORT).show();
+        if (currentLecture == null) {
+            Toast.makeText(getContext(), "Нечего сохранять — запись не была начата",
+                Toast.LENGTH_SHORT).show();
+            return;
         }
-        
+
+        currentLecture.setBlocks(contentBlocks);
+        currentLecture.setDuration(System.currentTimeMillis() - recordingStartTime);
+
+        // Пост-обработка: встроенный процессор ядра + процессоры модов
+        new com.example.lector.services.CorePostProcessor().process(currentLecture);
+        com.example.lector.plugin.PluginManager.getInstance(requireContext())
+            .getRegistry().runPostProcessors(currentLecture);
+        contentBlocks = currentLecture.getBlocks();
+
+        // Сохранение через LectureRepository (JSON-хранилище, совместимое с модами)
+        boolean saved = new com.example.lector.data.LectureRepository(requireContext())
+            .save(currentLecture);
+
+        if (saved) {
+            // Событие для модов: лекция сохранена
+            com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                .getEventBus().publish(
+                    com.example.lector.plugin.EventBus.Event.LECTURE_SAVED,
+                    currentLecture);
+        }
+
+        Toast.makeText(getContext(),
+            saved ? "Лекция сохранена" : "Ошибка сохранения лекции",
+            Toast.LENGTH_SHORT).show();
+
         requireActivity().getSupportFragmentManager().popBackStack();
     }
     
@@ -256,11 +316,39 @@ public class RecordingFragment extends Fragment implements
     }
     
     private void requestAudioPermission() {
+        java.util.List<String> needed = new java.util.ArrayList<>();
+        needed.add(Manifest.permission.RECORD_AUDIO);
+        // На Android 13+ без POST_NOTIFICATIONS уведомление фоновой записи не покажется
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
         ActivityCompat.requestPermissions(requireActivity(),
-            new String[]{Manifest.permission.RECORD_AUDIO},
+            needed.toArray(new String[0]),
             PERMISSION_REQUEST_CODE);
     }
-    
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE
+                && permissions.length > 0
+                && Manifest.permission.RECORD_AUDIO.equals(permissions[0])) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Разрешение выдано — продолжаем начатое действие
+                startRecording();
+            } else {
+                Toast.makeText(requireContext(),
+                    "Для записи лекций необходимо разрешение на микрофон",
+                    Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     // ===== AudioRecorderService callbacks =====
     
     @Override
@@ -323,9 +411,15 @@ public class RecordingFragment extends Fragment implements
     @Override
     public void onTextRecognized(String newText, String fullText) {
         requireActivity().runOnUiThread(() -> {
-            // Анализ текста и создание блока
-            ContentBlock block = analyzerService.analyzeText(newText, 
-                System.currentTimeMillis() - recordingStartTime);
+            // Сначала моды (цепочка BlockHandler), затем встроенный анализатор ядра
+            ContentBlock block = com.example.lector.plugin.PluginManager
+                .getInstance(requireContext()).getRegistry()
+                .handleText(newText, System.currentTimeMillis() - recordingStartTime);
+
+            if (block == null) {
+                block = analyzerService.analyzeText(newText,
+                    System.currentTimeMillis() - recordingStartTime);
+            }
             
             if (block != null) {
                 // Определение спикера
@@ -333,6 +427,13 @@ public class RecordingFragment extends Fragment implements
                 contentBlocks.add(block);
                 blockAdapter.notifyDataSetChanged();
                 
+
+                // События для модов
+                com.example.lector.plugin.EventBus bus =
+                    com.example.lector.plugin.PluginManager.getInstance(requireContext())
+                        .getEventBus();
+                bus.publish(com.example.lector.plugin.EventBus.Event.TRANSCRIPTION_RECEIVED, newText);
+                bus.publish(com.example.lector.plugin.EventBus.Event.BLOCK_ADDED, block);
                 // Прокрутка к новому блоку
                 binding.recyclerViewContent.scrollToPosition(contentBlocks.size() - 1);
             }

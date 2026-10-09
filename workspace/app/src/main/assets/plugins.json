@@ -1,0 +1,11 @@
+{
+  "manifestVersion": 1,
+  "comment": "Список встроенных модов Lector. enabled:false отключает мод без пересборки.",
+  "plugins": [
+    {
+      "id": "builtin.highlighter",
+      "class": "com.example.lector.plugin.builtin.HighlighterPlugin",
+      "enabled": true
+    }
+  ]
+}

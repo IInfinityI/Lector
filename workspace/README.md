@@ -14,19 +14,48 @@ app/src/main/java/com/example/lector/
 │   ├── GraphBlock.java         # График
 │   ├── HeadingBlock.java       # Заголовки и абзацы
 │   └── Lecture.java            # Модель всей лекции
+├── plugin/                     # Plugin API — система модов
+│   ├── LectorPlugin.java       # Главный интерфейс мода
+│   ├── PluginRegistry.java     # Реестр типов блоков и команд
+│   ├── PluginManager.java      # Загрузка и жизненный цикл модов
+│   ├── PluginContext.java      # Изолированное окружение мода
+│   ├── BlockHandler.java       # Цепочка ответственности текст→блок
+│   ├── FormattingCommand.java  # Устные команды форматирования
+│   ├── EventBus.java           # События ядра (запись, сохранение)
+│   └── builtin/                # Встроенные демо-моды (Highlighter)
+├── data/                       # Хранилище (JSON-репозиторий лекций)
+│   └── LectureRepository.java  # Сохранение/загрузка с версионированием
 ├── services/                   # Бизнес-логика (Logic Layer)
 │   ├── AudioRecorderService.java      # Запись аудио
+│   ├── RecordingForegroundService.java # Foreground-сервис фоновой записи
 │   ├── TranscriptionService.java      # Распознавание речи
 │   ├── SpeakerDiarizationService.java # Определение спикеров
 │   └── ContentAnalyzerService.java    # Анализ контента
+├── adapters/                   # RecyclerView-адаптеры
 ├── utils/                      # Вспомогательные утилиты
 │   └── NumberUtils.java        # Парсинг русских чисел
-├── screens/                    # UI экраны (в разработке)
-├── widgets/                    # UI компоненты (в разработке)
-├── MainActivity.java           # Главная активность
-├── FirstFragment.java          # Фрагмент 1
-└── SecondFragment.java         # Фрагмент 2
+├── MainActivity.java           # Главная активность + навигация
+├── LectureListFragment.java    # Библиотека конспектов
+├── RecordingFragment.java      # Экран записи
+├── EditorFragment.java         # Редактор конспекта
+└── PluginsFragment.java        # Управление модами
 ```
+
+## 🧩 Система модов (ядро + плагины)
+
+Lector работает как голосовой блокнот, расширяемый модами по аналогии с модами в играх:
+ядро (запись, транскрипция, хранение) стабильно, а новую функциональность добавляют
+плагины без изменения кода ядра. Полное руководство для авторов: [`docs/PLUGIN_GUIDE.md`](docs/PLUGIN_GUIDE.md).
+
+Возможности мода:
+- регистрация **новых типов блоков** (сериализуются в JSON, обратная совместимость);
+- **BlockHandler** — создание блоков из распознанной речи (цепочка ответственности до ядра);
+- **FormattingCommand** — устные команды («выдели это», «заголовок»);
+- **EventBus** — подписка на события (начало/конец записи, сохранение лекции);
+- **PostProcessor** — пост-обработка лекции после остановки записи;
+- **BlockRenderer** — UI-слоты: кастомная отрисовка блоков мода в редакторе и Markdown-экспорте;
+- три способа загрузки: встроенные (`assets/plugins.json`), ServiceLoader, динамические DEX/JAR;
+- включение/выключение модов в разделе «Моды».
 
 ## ✅ Реализованный функционал
 
@@ -132,27 +161,22 @@ app/src/main/java/com/example/lector/
 ## 📝 Хранение данных
 
 - **Аудиофайлы**: Локальная файловая система (`/storage/emulated/0/Android/data/com.example.lector/files/recordings/`)
-- **Конспекты**: SQLite (планируется) + сериализация моделей
+- **Конспекты**: JSON-репозиторий `LectureRepository` (версионирование, обратная совместимость с неизвестными типами блоков из модов)
 - **Изображения**: Локальная файловая система
 
 ## 🚀 Следующие шаги
 
-1. **UI Implementation**
-   - Главный экран записи
-   - Редактор конспекта
-   - Библиотека записей
+1. **Advanced Features**
+   - ✅ Синхронизация аудио и текста (клик по блоку → перемотка, подсветка активного блока) — готово
+   - ✅ Пост-обработка записей: `CorePostProcessor` ядра (чистка повторов, склейка абзацев, заголовок) + расширяемый хук `PostProcessor` для модов — готово
+   - Экспорт в PDF (hook для модов — API v2)
 
-2. **Database Integration**
-   - SQLite для хранения метаданных
-   - Индексация для поиска
+2. **Plugin Ecosystem**
+   - ✅ Импорт внешних модов (.jar/.dex) через UI «Моды» + DexClassLoader — готово
+   - UI-слоты в редакторе для кастомных блоков
+   - Sandboxed-загрузка внешних APK-плагинов (API v3)
 
-3. **Advanced Features**
-   - Синхронизация аудио и текста (клик → перемотка)
-   - Глубокий анализ записей (post-processing)
-   - Экспорт в PDF
-
-4. **Optimization**
-   - Фоновая запись
+3. **Optimization**
    - Энергосбережение
    - Кэширование
 

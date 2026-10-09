@@ -1,5 +1,8 @@
 package com.example.lector.models;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +10,7 @@ import java.util.List;
 /**
  * Блок изображения (фотография доски, слайда или нарисованная схема).
  */
-public class ImageBlock extends ContentBlock {
+public class ImageBlock extends ContentBlock implements BlockSerializer {
     private String imagePath;      // Путь к файлу изображения
     private String caption;        // Подпись
     private ImageSource source;    // Источник изображения
@@ -65,6 +68,56 @@ public class ImageBlock extends ContentBlock {
     }
 
     @Override
+    public JSONObject toJson() {
+        JSONObject json = super.toJson();
+        try {
+            json.put("imagePath", imagePath);
+            json.put("caption", caption);
+            json.put("source", source.name());
+            json.put("width", width);
+            json.put("height", height);
+            JSONArray pts = new JSONArray();
+            for (Point pt : points) {
+                JSONObject o = new JSONObject();
+                o.put("x", pt.getX());
+                o.put("y", pt.getY());
+                o.put("color", pt.getColor());
+                o.put("strokeWidth", pt.getStrokeWidth());
+                pts.put(o);
+            }
+            json.put("points", pts);
+        } catch (Exception ignored) {}
+        return json;
+    }
+
+    public static ImageBlock fromJson(JSONObject json, long timestamp) {
+        String path = json.optString("imagePath", null);
+        ImageSource src;
+        try { src = ImageSource.valueOf(json.optString("source", "CAMERA")); }
+        catch (Exception e) { src = ImageSource.CAMERA; }
+        String savedId = json.optString("id", null);
+        ImageBlock b = path != null ? new ImageBlock(path, timestamp)
+                                    : new ImageBlock(timestamp, src);
+        if (savedId != null) b.id = savedId;
+        b.caption = json.optString("caption", null);
+        b.width = json.optInt("width", 0);
+        b.height = json.optInt("height", 0);
+        JSONArray pts = json.optJSONArray("points");
+        if (pts != null) {
+            b.points.clear();
+            for (int i = 0; i < pts.length(); i++) {
+                JSONObject o = pts.optJSONObject(i);
+                if (o != null) {
+                    b.points.add(new Point((float) o.optDouble("x", 0), (float) o.optDouble("y", 0),
+                        o.optInt("color", 0xFF000000), (float) o.optDouble("strokeWidth", 5.0)));
+                }
+            }
+        }
+        b.applyBaseJson(json);
+        return b;
+    }
+
+    @Override
     public String toMarkdown() {
         StringBuilder sb = new StringBuilder();
         
@@ -84,45 +137,3 @@ public class ImageBlock extends ContentBlock {
     }
 }
 
-/**
- * Источник изображения
- */
-enum ImageSource {
-    CAMERA,         // Фото с камеры
-    GALLERY,        // Из галереи
-    DRAWING,        // Нарисовано от руки
-    SCREENSHOT      // Скриншот
-}
-
-/**
- * Точка для хранения координат рисунка
- */
-class Point implements Serializable {
-    private float x;
-    private float y;
-    private int color;      // Цвет точки (ARGB)
-    private float strokeWidth; // Толщина штриха
-
-    public Point(float x, float y) {
-        this.x = x;
-        this.y = y;
-        this.color = 0xFF000000; // Черный по умолчанию
-        this.strokeWidth = 5.0f;
-    }
-
-    public Point(float x, float y, int color, float strokeWidth) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        this.strokeWidth = strokeWidth;
-    }
-
-    public float getX() { return x; }
-    public void setX(float x) { this.x = x; }
-    public float getY() { return y; }
-    public void setY(float y) { this.y = y; }
-    public int getColor() { return color; }
-    public void setColor(int color) { this.color = color; }
-    public float getStrokeWidth() { return strokeWidth; }
-    public void setStrokeWidth(float strokeWidth) { this.strokeWidth = strokeWidth; }
-}

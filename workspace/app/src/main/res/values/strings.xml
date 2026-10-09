@@ -185,8 +185,19 @@
     <string name="first_fragment_label">Первый фрагмент</string>
     <string name="second_fragment_label">Второй фрагмент</string>
     
+    <!-- Plugins / Mods -->
+    <string name="plugins_title">Моды</string>
+    <string name="plugins_import">Установить мод (.jar/.dex)</string>
+    <string name="plugins_installed">Установленные моды</string>
+    <string name="plugins_error">Ошибка загрузки мода</string>
+    <string name="action_plugins">Моды</string>
+
     <!-- Common Strings -->
     <string name="next">Далее</string>
     <string name="previous">Назад</string>
     <string name="lorem_ipsum">Пример текста для отображения в фрагменте.</string>
+    <string name="notification_recording_title">Lector записывает</string>
+    <string name="notification_recording_default">Идёт запись лекции…</string>
+    <string name="notification_channel_name">Запись аудио</string>
+    <string name="notification_channel_desc">Уведомление о фоновой записи лекции</string>
 </resources>

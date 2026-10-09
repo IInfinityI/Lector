@@ -1,5 +1,8 @@
 package com.example.lector.models;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +11,7 @@ import java.util.List;
  * Блок текста - результат транскрибации речи.
  * Поддерживает смешанный русский/английский язык.
  */
-public class TextBlock extends ContentBlock {
+public class TextBlock extends ContentBlock implements BlockSerializer {
     private String text;
     private String language; // "ru", "en", "mixed"
     private List<WordTimestamp> wordTimestamps; // Для синхронизации с аудио
@@ -51,6 +54,45 @@ public class TextBlock extends ContentBlock {
     public List<WordTimestamp> getWordTimestamps() { return wordTimestamps; }
     public void setWordTimestamps(List<WordTimestamp> timestamps) { 
         this.wordTimestamps = timestamps; 
+    }
+
+    @Override
+    public JSONObject toJson() {
+        JSONObject json = super.toJson();
+        try {
+            json.put("text", text);
+            json.put("language", language);
+            JSONArray wt = new JSONArray();
+            for (WordTimestamp w : wordTimestamps) {
+                JSONObject o = new JSONObject();
+                o.put("word", w.getWord());
+                o.put("start", w.getStartTime());
+                o.put("end", w.getEndTime());
+                wt.put(o);
+            }
+            json.put("wordTimestamps", wt);
+        } catch (Exception ignored) {}
+        return json;
+    }
+
+    public static TextBlock fromJson(JSONObject json, long timestamp) {
+        String savedId = json.optString("id", null);
+        TextBlock b = new TextBlock(json.optString("text", ""), timestamp);
+        if (savedId != null) b.id = savedId;
+        JSONArray wt = json.optJSONArray("wordTimestamps");
+        if (wt != null) {
+            List<WordTimestamp> list = new ArrayList<>();
+            for (int i = 0; i < wt.length(); i++) {
+                JSONObject o = wt.optJSONObject(i);
+                if (o != null) {
+                    list.add(new WordTimestamp(o.optString("word", ""),
+                        o.optLong("start", 0), o.optLong("end", 0)));
+                }
+            }
+            b.setWordTimestamps(list);
+        }
+        b.applyBaseJson(json);
+        return b;
     }
 
     @Override

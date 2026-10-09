@@ -1,5 +1,8 @@
 package com.example.lector.models;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +11,7 @@ import java.util.List;
  * Блок графика для визуализации данных.
  * Поддерживает линейные и столбчатые графики.
  */
-public class GraphBlock extends ContentBlock {
+public class GraphBlock extends ContentBlock implements BlockSerializer {
     private GraphType graphType;
     private String title;
     private String xAxisLabel;
@@ -63,6 +66,58 @@ public class GraphBlock extends ContentBlock {
     public void clearData() {
         this.dataPoints.clear();
         this.xLabels.clear();
+    }
+
+    @Override
+    public JSONObject toJson() {
+        JSONObject json = super.toJson();
+        try {
+            json.put("graphType", graphType.name());
+            json.put("title", title);
+            json.put("xAxisLabel", xAxisLabel);
+            json.put("yAxisLabel", yAxisLabel);
+            JSONArray pts = new JSONArray();
+            for (DataPoint dp : dataPoints) {
+                JSONObject o = new JSONObject();
+                o.put("x", dp.getX());
+                o.put("y", dp.getY());
+                o.put("label", dp.getLabel());
+                pts.put(o);
+            }
+            json.put("dataPoints", pts);
+            json.put("xLabels", new JSONArray(xLabels));
+        } catch (Exception ignored) {}
+        return json;
+    }
+
+    public static GraphBlock fromJson(JSONObject json, long timestamp) {
+        String savedId = json.optString("id", null);
+        GraphBlock b = new GraphBlock(timestamp);
+        if (savedId != null) b.id = savedId;
+        try { b.graphType = GraphType.valueOf(json.optString("graphType", "LINE")); }
+        catch (Exception ignored) {}
+        b.title = json.optString("title", null);
+        b.xAxisLabel = json.optString("xAxisLabel", null);
+        b.yAxisLabel = json.optString("yAxisLabel", null);
+        JSONArray pts = json.optJSONArray("dataPoints");
+        if (pts != null) {
+            b.dataPoints.clear();
+            for (int i = 0; i < pts.length(); i++) {
+                JSONObject o = pts.optJSONObject(i);
+                if (o != null) {
+                    DataPoint dp = new DataPoint(o.optDouble("x", 0), o.optDouble("y", 0));
+                    dp.setLabel(o.optString("label", null));
+                    b.dataPoints.add(dp);
+                }
+            }
+        }
+        JSONArray xl = json.optJSONArray("xLabels");
+        if (xl != null) {
+            b.xLabels.clear();
+            for (int i = 0; i < xl.length(); i++) b.xLabels.add(xl.optString(i, ""));
+        }
+        b.applyBaseJson(json);
+        return b;
     }
 
     @Override
@@ -122,33 +177,3 @@ public class GraphBlock extends ContentBlock {
     }
 }
 
-/**
- * Тип графика
- */
-enum GraphType {
-    LINE,       // Линейный график
-    BAR,        // Столбчатый график
-    SCATTER,    // Точечный график
-    PIE         // Круговая диаграмма
-}
-
-/**
- * Точка данных для графика
- */
-class DataPoint implements Serializable {
-    private double x;
-    private double y;
-    private String label; // Опциональная подпись
-
-    public DataPoint(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public double getX() { return x; }
-    public void setX(double x) { this.x = x; }
-    public double getY() { return y; }
-    public void setY(double y) { this.y = y; }
-    public String getLabel() { return label; }
-    public void setLabel(String label) { this.label = label; }
-}

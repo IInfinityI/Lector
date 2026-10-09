@@ -1,0 +1,58 @@
+package com.example.lector.plugin;
+
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Главный интерфейс мода (плагина) Lector.
+ *
+ * Плагин — это расширяющая функциональность единица, как мод в игре:
+ * он регистрирует новые типы блоков контента и/или обработчики транскрипции,
+ * не изменяя код ядра приложения.
+ *
+ * Способы подключения:
+ *  1. Встроенные плагины — объявлены в assets/plugins.json, класс лежит в APK.
+ *  2. Java ServiceLoader — плагин добавлен как gradle-модуль с META-INF/services.
+ *  3. Динамическая загрузка DEX/JAR из filesDir/plugins_ext/ (привилегированные режимы).
+ */
+public interface LectorPlugin {
+
+    /** Уникальный идентификатор, обратно-доменный стиль: "com.example.myplugin". */
+    String getId();
+
+    /** Человекочитаемое название (отображается в разделе «Моды»). */
+    String getName();
+
+    /** Описание для пользователя. */
+    String getDescription();
+
+    /** Версия плагина (SemVer). */
+    default String getVersion() { return "1.0.0"; }
+
+    /** Минимальная совместимая версия API плагинов. */
+    default int getApiVersion() { return 1; }
+
+    /** Инициализация плагина. Вызывается один раз после загрузки. */
+    void onInit(PluginContext context);
+
+    /** Регистрация возможностей плагина в реестре ядра. */
+    void onRegister(PluginRegistry registry);
+
+    /** Типы блоков, которые плагин умеет создавать из распознанного текста. */
+    default List<BlockHandler> getBlockHandlers() { return Collections.emptyList(); }
+
+    /** Обработчики команд форматирования ("заголовок", "таблица 3x4"). */
+    default List<FormattingCommand> getFormattingCommands() { return Collections.emptyList(); }
+
+    /** Процессоры пост-обработки, применяемые к лекции после остановки записи. */
+    default List<PostProcessor> getPostProcessors() { return Collections.emptyList(); }
+
+    /** Подписка на события ядра (начало/конец записи, сохранение лекции). */
+    default void subscribe(EventBus bus) { }
+
+    /** Расширения аудио, которые плагин готов принять в импорт (напр. ".mp3"). */
+    default List<String> getSupportedAudioExtensions() { return Collections.emptyList(); }
+
+    /** Освобождение ресурсов. */
+    default void onShutdown() { }
+}
