@@ -61,6 +61,85 @@ public class RecordingFragment extends Fragment implements
     private long recordingStartTime;
     private boolean isRecording = false;
     private boolean isPaused = false;
+
+    // ===== Живая лента (печать в реальном времени) =====
+    private final StringBuilder liveCommitted = new StringBuilder();   // подтверждённые строки
+    private String liveCurrentLine = "";                              // текущая распознаваемая строка
+    private int liveRevealedChars = 0;                                // сколько символов уже "напечатано"
+    private static final int LIVE_PRINT_DELAY_MS = 45;                // скорость печати, мс/символ
+    private static final int LIVE_MAX_TAIL_LINES = 200;               // ограничение памяти ленты
+    private final Handler livePrintHandler = new Handler(Looper.getMainLooper());
+    private final Runnable livePrintRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (liveRevealedChars < liveCurrentLine.length()) {
+                liveRevealedChars++;
+                updateLiveTranscriptView();
+                livePrintHandler.postDelayed(this, LIVE_PRINT_DELAY_MS);
+            }
+        }
+    };
+
+    /**
+     * Обновление частичного (ещё не подтверждённого) результата распознавания.
+     * Печатается посимвольно, чтобы глаза успевали за текстом.
+     */
+    private void onPartialRecognized(String partial) {
+        if (!isRecording || isPaused) return;
+        String p = partial == null ? "" : partial.trim();
+        if (p.startsWith(liveCurrentLine)) {
+            liveCurrentLine = p;                       // строка растёт — просто допечатываем
+        } else if (p.length() >= liveCurrentLine.length()) {
+            liveCurrentLine = p;                       // распознавание уточнило строку целиком
+        }
+        // если частичный результат стал короче текущего — ждём подтверждения, не переписываем назад
+        if (liveRevealedChars < liveCurrentLine.length()) {
+            livePrintHandler.removeCallbacks(livePrintRunnable);
+            livePrintHandler.post(livePrintRunnable);
+        }
+    }
+
+    /**
+     * Подтверждение финальной строки: строка фиксируется в ленте с префиксом спикера.
+     */
+    private void commitLiveLine(String text, String speakerName) {
+        livePrintHandler.removeCallbacks(livePrintRunnable);
+        String line = (speakerName != null && !speakerName.isEmpty())
+            ? speakerName + ": " + text : text;
+        if (liveCommitted.length() > 0) liveCommitted.append('\n');
+        liveCommitted.append(line);
+        trimLiveTail();
+        liveCurrentLine = "";
+        liveRevealedChars = 0;
+        updateLiveTranscriptView();
+    }
+
+    private void trimLiveTail() {
+        int idx = liveCommitted.length();
+        int count = 0;
+        while (idx > 0 && count <= LIVE_MAX_TAIL_LINES) {
+            idx = liveCommitted.lastIndexOf("\n", idx - 1);
+            count++;
+        }
+        if (count > LIVE_MAX_TAIL_LINES && idx >= 0) {
+            liveCommitted.delete(0, idx + 1);
+        }
+    }
+
+    private void updateLiveTranscriptView() {
+        if (binding == null || !isAdded()) return;
+        StringBuilder sb = new StringBuilder(liveCommitted);
+        if (!liveCurrentLine.isEmpty()) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(liveCurrentLine, 0, liveRevealedChars);
+            if (liveRevealedChars < liveCurrentLine.length()) {
+                sb.append('▌');                        // каретка «печатающегося» текста
+            }
+        }
+        binding.tvLiveTranscript.setText(sb.toString());
+        binding.liveScroll.post(() ->
+            binding.liveScroll.fullScroll(android.view.View.FOCUS_DOWN));
+    }
     
     @Nullable
     @Override
@@ -163,7 +242,15 @@ public class RecordingFragment extends Fragment implements
             isRecording = true;
             isPaused = false;
             recordingStartTime = System.currentTimeMillis();
-            
+
+            // Живая лента вместо структурированного списка на время записи
+            liveCommitted.setLength(0);
+            liveCurrentLine = "";
+            liveRevealedChars = 0;
+            binding.tvLiveTranscript.setText("");
+            binding.liveScroll.setVisibility(View.VISIBLE);
+            binding.recyclerViewContent.setVisibility(View.GONE);
+
 
             // Событие для модов: начало записи
             com.example.lector.plugin.PluginManager.getInstance(requireContext())
@@ -190,6 +277,11 @@ public class RecordingFragment extends Fragment implements
         
         isRecording = false;
         isPaused = false;
+
+        // После остановки — структурированный список блоков поверх живой ленты
+        livePrintHandler.removeCallbacks(livePrintRunnable);
+        binding.liveScroll.setVisibility(View.GONE);
+        binding.recyclerViewContent.setVisibility(View.VISIBLE);
         
 
         // Событие для модов: конец записи
@@ -439,14 +531,16 @@ public class RecordingFragment extends Fragment implements
             }
             
             binding.transcriptionStatus.setText(newText);
+
+            // Фиксация подтверждённой строки в живой ленте (для списывания с экрана)
+            String speaker = block != null ? block.getSpeakerName() : "";
+            commitLiveLine(newText, speaker);
         });
     }
-    
+
     @Override
     public void onPartialText(String partialText) {
-        requireActivity().runOnUiThread(() -> {
-            binding.transcriptionHint.setText(partialText);
-        });
+        requireActivity().runOnUiThread(() -> onPartialRecognized(partialText));
     }
     
     @Override
@@ -467,6 +561,7 @@ public class RecordingFragment extends Fragment implements
     
     @Override
     public void onDestroyView() {
+        livePrintHandler.removeCallbacks(livePrintRunnable);
         super.onDestroyView();
         if (timerHandler != null) {
             timerHandler.removeCallbacks(timerRunnable);
