@@ -77,7 +77,8 @@ public class PluginsFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQUEST_IMPORT_PLUGIN || resultCode != RESULT_OK || data == null) return;
+        if (requestCode != REQUEST_IMPORT_PLUGIN
+                || resultCode != android.app.Activity.RESULT_OK || data == null) return;
         Uri uri = data.getData();
         if (uri == null) return;
 

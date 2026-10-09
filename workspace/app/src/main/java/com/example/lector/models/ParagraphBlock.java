@@ -68,3 +68,4 @@ public class ParagraphBlock extends TextBlock implements BlockSerializer {
         
         return text;
     }
+}
