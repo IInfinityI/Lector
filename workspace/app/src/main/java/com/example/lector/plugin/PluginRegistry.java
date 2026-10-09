@@ -40,6 +40,7 @@ public class PluginRegistry {
     private final Map<String, RegisteredType> blockTypes = new HashMap<>();
     private final List<BlockHandler> blockHandlers = new ArrayList<>();
     private final Map<String, FormattingCommand> formattingCommands = new HashMap<>();
+    private final List<PostProcessor> postProcessors = new ArrayList<>();
 
     /** Регистрация нового типа блока плагином (аналог добавления предмета/блока в игру). */
     public void registerBlockType(String key, LectorPlugin owner, BlockFactory factory) {
@@ -97,6 +98,30 @@ public class PluginRegistry {
 
     public List<BlockHandler> getBlockHandlers() {
         return new ArrayList<>(blockHandlers);
+    }
+
+    /** Регистрация процессора пост-обработки лекции. */
+    public void registerPostProcessor(PostProcessor processor) {
+        if (processor != null) postProcessors.add(processor);
+    }
+
+    /**
+     * Применить все пост-процессоры плагинов к лекции (вызывается ядром
+     * после остановки записи). Исключение одного плагина не ломает обработку.
+     */
+    public void runPostProcessors(com.example.lector.models.Lecture lecture) {
+        if (lecture == null) return;
+        for (PostProcessor p : postProcessors) {
+            try {
+                p.process(lecture);
+            } catch (Exception ignored) {
+                // Сбой плагина не должен ломать сохранение лекции
+            }
+        }
+    }
+
+    public List<PostProcessor> getPostProcessors() {
+        return new ArrayList<>(postProcessors);
     }
 
     /** Регистрация устной команды форматирования. */

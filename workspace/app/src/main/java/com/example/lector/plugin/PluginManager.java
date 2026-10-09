@@ -72,6 +72,10 @@ public class PluginManager {
                 PluginContext ctx = new PluginContext(appContext, dir);
                 plugin.onInit(ctx);
                 plugin.onRegister(registry);
+                // Автоматическая регистрация декларативных возможностей плагина
+                for (BlockHandler h : plugin.getBlockHandlers()) registry.registerBlockHandler(h);
+                for (FormattingCommand c : plugin.getFormattingCommands()) registry.registerFormattingCommand(c);
+                for (PostProcessor p : plugin.getPostProcessors()) registry.registerPostProcessor(p);
                 plugin.subscribe(eventBus);
                 Log.i(TAG, "Плагин загружен: " + plugin.getId() + " v" + plugin.getVersion());
             } catch (Exception e) {

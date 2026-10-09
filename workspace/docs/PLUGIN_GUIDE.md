@@ -14,6 +14,7 @@ Lector спроектирован как голосовой блокнот с а
 | `BlockHandler` | Цепочка ответственности: текст → блок контента |
 | `FormattingCommand` | Обработчик устных команд («заголовок», «выделить») |
 | `EventBus` | События ядра: RECORDING_STARTED / STOPPED, LECTURE_SAVED |
+| `PostProcessor` | Пост-обработка готовой лекции после остановки записи (чистка, склейка, структура) |
 | `PluginContext` | Изолированное окружение мода (данные лекции, своя песочница на диске) |
 
 Загрузкой и жизненным циклом модов управляет синглтон `PluginManager`.
@@ -70,7 +71,7 @@ public List<BlockHandler> getBlockHandlers() {
 
 Ядро опрашивает хендлеры модов **до** встроенного анализатора (цепочка ответственности).
 
-### 4. Подпишитесь на события
+### 4. Подпишитесь на события и добавьте пост-обработку
 
 ```java
 @Override
@@ -78,7 +79,21 @@ public void subscribe(EventBus bus) {
     bus.subscribe(EventBus.Event.RECORDING_STOPPED,
             (event, payload) -> { /* ... */ });
 }
+
+@Override
+public List<PostProcessor> getPostProcessors() {
+    return Collections.singletonList(new PostProcessor() {
+        @Override public String getName() { return "my-summary"; }
+        @Override public void process(Lecture lecture) {
+            // например: добавить блок «Краткое содержание» в конец конспекта
+        }
+    });
+}
 ```
+
+Ядро вызывает процессоры после встроенного `CorePostProcessor` (чистка повторов,
+склейка абзацев, заголовок из названия предмета), перед сохранением лекции.
+Исключение одного мода не ломает обработку остальных.
 
 ### 5. Подключите мод
 
@@ -122,6 +137,6 @@ public void subscribe(EventBus bus) {
 
 ## Дорожная карта API
 
-* v1 (реализовано): типы блоков, BlockHandler, FormattingCommand, EventBus.
+* v1 (реализовано): типы блоков, BlockHandler, FormattingCommand, EventBus, PostProcessor.
 * v2 (план): экспорт-фильтры (hook в Markdown/PDF-экспорт), UI-слоты в редакторе.
 * v3 (план): sandboxed-загрузка внешних APK-плагинов.

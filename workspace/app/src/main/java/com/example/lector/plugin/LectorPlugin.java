@@ -44,6 +44,9 @@ public interface LectorPlugin {
     /** Обработчики команд форматирования ("заголовок", "таблица 3x4"). */
     default List<FormattingCommand> getFormattingCommands() { return Collections.emptyList(); }
 
+    /** Процессоры пост-обработки, применяемые к лекции после остановки записи. */
+    default List<PostProcessor> getPostProcessors() { return Collections.emptyList(); }
+
     /** Подписка на события ядра (начало/конец записи, сохранение лекции). */
     default void subscribe(EventBus bus) { }
 

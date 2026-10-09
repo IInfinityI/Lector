@@ -222,6 +222,12 @@ public class RecordingFragment extends Fragment implements
         currentLecture.setBlocks(contentBlocks);
         currentLecture.setDuration(System.currentTimeMillis() - recordingStartTime);
 
+        // Пост-обработка: встроенный процессор ядра + процессоры модов
+        new com.example.lector.services.CorePostProcessor().process(currentLecture);
+        com.example.lector.plugin.PluginManager.getInstance(requireContext())
+            .getRegistry().runPostProcessors(currentLecture);
+        contentBlocks = currentLecture.getBlocks();
+
         // Сохранение через LectureRepository (JSON-хранилище, совместимое с модами)
         boolean saved = new com.example.lector.data.LectureRepository(requireContext())
             .save(currentLecture);
