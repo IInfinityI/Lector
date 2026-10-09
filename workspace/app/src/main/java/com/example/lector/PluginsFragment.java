@@ -52,7 +52,8 @@ public class PluginsFragment extends Fragment {
         List<LectorPlugin> plugins = pluginManager.getLoadedPlugins();
 
         adapter = new PluginAdapter(plugins, pluginManager.getLoadErrors(),
-            this::installFromPicker);
+            this::installFromPicker,
+            pluginManager::getContextFor);
         binding.recyclerPlugins.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerPlugins.setAdapter(adapter);
 

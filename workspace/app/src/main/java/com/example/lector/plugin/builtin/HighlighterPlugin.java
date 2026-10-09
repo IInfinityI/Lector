@@ -21,6 +21,7 @@ import com.example.lector.plugin.ToolbarAction;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,10 +30,17 @@ import java.util.List;
  * и превращает фразу в блок HighlightBlock (кастомный тип HIGHLIGHT).
  *
  * Плагин подключается списком в assets/plugins.json — без правки ядра.
+ * UI-слот v1.4: мод объявляет настройки через getSettings(); ядро само
+ * рисует панель конфигурации на экране «Моды», а мод читает значения
+ * из context.getSettings() (в демо — ширина рамки выделения).
  */
 public class HighlighterPlugin implements LectorPlugin {
 
     public static final String ID = "builtin.highlighter";
+
+    private static final com.example.lector.plugin.PluginSettings.SettingDescriptor
+        SETTING_BORDER = com.example.lector.plugin.PluginSettings.SettingDescriptor
+            .intVal("border_width", "Толщина рамки (dp)", 2);
 
     @Override
     public String getId() { return ID; }
@@ -46,7 +54,17 @@ public class HighlighterPlugin implements LectorPlugin {
     }
 
     @Override
-    public void onInit(PluginContext context) { /* демо: настройки не требуются */ }
+    public void onInit(PluginContext context) { /* настройки читаются лениво из getSettings() */ }
+
+    /**
+     * UI-слот v1.4: декларация настроек мода. Ядро автоматически рисует
+     * панель конфигурации на экране «Моды» (числовое поле), значение
+     * сохраняется в изолированном SharedPreferences этого мода.
+     */
+    @Override
+    public List<com.example.lector.plugin.PluginSettings.SettingDescriptor> getSettings() {
+        return Collections.singletonList(SETTING_BORDER);
+    }
 
     @Override
     public void onRegister(PluginRegistry registry) {
@@ -145,6 +163,10 @@ public class HighlighterPlugin implements LectorPlugin {
                     String text = ((com.example.lector.models.TextBlock) last).getText();
                     HighlightBlock hl = new HighlightBlock("#" + firstWord(text),
                         last.getTimestamp(), "green");
+                    // Демонстрация v1.4: мод читает свою настройку, которую
+                    // пользователь изменил на экране «Моды» (ядро сохранило её).
+                    int borderDp = context.getSettings().getInt("border_width", 2);
+                    hl.setNote("border=" + borderDp + "dp");
                     lecture.addBlock(hl);
                     // Сохранение через контекст не нужно — ядро сохранит лекцию само;
                     // плагин может использовать context.getPluginDataDir() для своих файлов
