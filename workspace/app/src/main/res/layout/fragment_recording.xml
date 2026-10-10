@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/lector_background">
@@ -19,18 +20,31 @@
             android:orientation="vertical"
             android:padding="12dp">
 
+            <!-- Дата начала лекции (ставится автоматически, фиксируется при старте) -->
+            <TextView
+                android:id="@+id/text_lecture_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/lector_primary"
+                tools:text="📅 сегодня, суббота, 10.10.2026" />
+
             <!-- Поле предмета -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                app:endIconMode="dropdown_menu"
                 android:hint="@string/recording_subject_hint">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <AutoCompleteTextView
                     android:id="@+id/edit_subject"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="text"
+                    android:completionThreshold="0"
                     android:maxLines="1" />
 
             </com.google.android.material.textfield.TextInputLayout>

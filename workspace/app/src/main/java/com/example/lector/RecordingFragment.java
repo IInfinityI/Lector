@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -158,10 +159,41 @@ public class RecordingFragment extends Fragment implements
         setupRecyclerView();
         setupButtons();
         startTimer();
-        
-        // Запрос названия предмета
-        binding.editSubject.setText(getArguments() != null ? 
-            getArguments().getString("subject", "") : "");
+
+        // Дата начала лекции ставится автоматически (видно до старта,
+        // фиксируется в Lecture.date при нажатии «Старт»)
+        binding.textLectureDate.setText(
+            com.example.lector.plugin.builtin.SubjectPickerPlugin
+                .dateLabel(System.currentTimeMillis()));
+
+        // Название предмета: подсказки из ранее сохранённых названий
+        // (реестр SubjectRegistry + мод SubjectPicker)
+        String savedSubject = getArguments() != null ?
+            getArguments().getString("subject", "") : "";
+        if (savedSubject.isEmpty()) {
+            List<com.example.lector.data.SubjectRegistry.Entry> recentSubjects =
+                new com.example.lector.data.SubjectRegistry(requireContext()).recent(10);
+            if (!recentSubjects.isEmpty()) savedSubject = recentSubjects.get(0).name;
+        }
+        binding.editSubject.setText(savedSubject);
+        binding.editSubject.setSelection(binding.editSubject.getText().length());
+        refreshSubjectSuggestions();
+
+        // Уведомляем моды об готовности экрана записи (UI-слот v1.5)
+        com.example.lector.plugin.PluginManager.getInstance(requireContext())
+            .notifyScreenReady("recording", binding.getRoot());
+    }
+
+    /** Перезаполняет выпадающий список предметов реестра. */
+    private void refreshSubjectSuggestions() {
+        java.util.List<String> names = new ArrayList<>();
+        for (com.example.lector.data.SubjectRegistry.Entry e :
+                new com.example.lector.data.SubjectRegistry(requireContext()).recent(50)) {
+            names.add(e.name);
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
+            android.R.layout.simple_dropdown_item_1line, names);
+        binding.editSubject.setAdapter(adapter);
     }
     
     private void initServices() {
@@ -222,6 +254,9 @@ public class RecordingFragment extends Fragment implements
         
         try {
             currentLecture = new Lecture(subject, System.currentTimeMillis());
+            // Название предмета сохраняется в реестре — оно появится в подсказках
+            // при следующей лекции (экран записи, выпадающий список «Предмет»)
+            new com.example.lector.data.SubjectRegistry(requireContext()).remember(subject);
             recorderService.startRecording(subject);
             transcriptionService.startListening();
 
