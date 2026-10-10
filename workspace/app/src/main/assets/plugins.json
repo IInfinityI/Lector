@@ -6,6 +6,26 @@
       "id": "builtin.highlighter",
       "class": "com.example.lector.plugin.builtin.HighlighterPlugin",
       "enabled": true
+    },
+    {
+      "id": "builtin.taskmaster",
+      "class": "com.example.lector.plugin.builtin.TaskMasterPlugin",
+      "enabled": true
+    },
+    {
+      "id": "builtin.summarybot",
+      "class": "com.example.lector.plugin.builtin.SummaryBotPlugin",
+      "enabled": true
+    },
+    {
+      "id": "builtin.subject-picker",
+      "class": "com.example.lector.plugin.builtin.SubjectPickerPlugin",
+      "enabled": true
+    },
+    {
+      "id": "builtin.obsidian-vault",
+      "class": "com.example.lector.plugin.builtin.ObsidianVaultPlugin",
+      "enabled": true
     }
   ]
 }

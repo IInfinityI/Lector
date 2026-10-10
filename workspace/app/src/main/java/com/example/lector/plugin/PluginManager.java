@@ -78,13 +78,44 @@ public class PluginManager {
                 for (BlockHandler h : plugin.getBlockHandlers()) registry.registerBlockHandler(h);
                 for (FormattingCommand c : plugin.getFormattingCommands()) registry.registerFormattingCommand(c);
                 for (PostProcessor p : plugin.getPostProcessors()) registry.registerPostProcessor(p);
-                for (Exporter ex : plugin.getExporters()) registry.registerExporter(ex);
+                for (Exporter ex : plugin.getExporters()) {
+                    // v1.5: экспортёр без контекста не умеет писать в песочницу мода —
+                    // отдаём ему контекст владельца-плагина (рефлексивно, API не трогая)
+                    bindExporterContext(ex, ctx);
+                    registry.registerExporter(ex);
+                }
                 for (ToolbarAction ta : plugin.getToolbarActions()) registry.registerToolbarAction(ta);
                 plugin.subscribe(eventBus);
                 Log.i(TAG, "Плагин загружен: " + plugin.getId() + " v" + plugin.getVersion());
             } catch (Exception e) {
                 loadErrors.add(plugin.getId() + ": init failed — " + e.getMessage());
                 Log.e(TAG, "Plugin init failed: " + plugin.getId(), e);
+            }
+        }
+    }
+
+    /** Передача контекста плагинному экспортёру (метод bindContext, если он есть). */
+    private static void bindExporterContext(Exporter exporter, PluginContext ctx) {
+        try {
+            exporter.getClass().getMethod("bindContext", PluginContext.class)
+                .invoke(exporter, ctx);
+        } catch (Exception ignored) {
+            // экспортёр не хочет контекст — не проблема
+        }
+    }
+
+    /**
+     * UI-слот v1.5: оповещение модов о готовом экране ядра.
+     * screenId: "recording" | "editor" | "lecture_list". Ошибки модов игнорируются.
+     */
+    public void notifyScreenReady(String screenId, android.view.View root) {
+        initialize();
+        if (root == null) return;
+        for (LectorPlugin p : loaded.values()) {
+            try {
+                p.onScreenReady(screenId, root);
+            } catch (Exception e) {
+                Log.w(TAG, "onScreenReady failed in " + p.getId() + ": " + e.getMessage());
             }
         }
     }

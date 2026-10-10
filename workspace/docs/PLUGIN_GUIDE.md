@@ -156,6 +156,41 @@ registry.registerBlockRenderer(MyBlock.TYPE_KEY, new BlockRenderer() {
 Ядро вызывает слоты с изоляцией ошибок: исключение в рендере мода не роняет
 редактор и экспорт (происходит деградация на отрисовку ядра).
 
+## Галерея встроенных модов
+
+Все моды подключены декларативно через `assets/plugins.json` — код ядра их не знает,
+ровно как аддоны в играх. Отключение: `"enabled": false` в JSON или тумблер на экране «Моды».
+
+| Мод | ID | Что делает | Используемый API |
+|-----|----|------------|-----------|
+| Highlighter (демо) | `com.lector.highlighter` | Маркер `\=текст\=`, экспорт PDF, кнопка «Тег #» | BlockHandler, FormattingCommand, Exporter, ToolbarAction |
+| TaskMaster | `com.lector.taskmaster` | Голосовые задачи «задача/не забыть/дз …» → чек-лист TODO; оранжевая карточка «☑ Задачи (N активных)»; склейка подряд продиктованных задач; GitHub-чекбоксы `- [x]` в Markdown; настраиваемый триггер | BlockHandler, BlockRenderer, PostProcessor, PluginSettings |
+| SummaryBot | `com.lector.summarybot` | При остановке записи вставляет блок «✍ Резюме: …» (первые N предложений + счётчики «· формул · таблиц · задач»); кнопка «Резюме» пересобирает одним тапом; повторная обработка заменяет, а не дублирует; длина 1–10 предложений | BlockHandler, BlockRenderer, PostProcessor, ToolbarAction, PluginSettings |
+| ObsidianVault | `com.lector.obsidianvault` | Экспорт лекции в хранилище Obsidian: Markdown с YAML-frontmatter (tags, date), авто-wiki-ссылки `[[...]]`, пересобираемый `_index.md`; голосовая команда «вики ссылка [тема]»; кнопка «Vault» в редакторе; хранилище в `files/obsidian-vault/` (Syncthing/Drive/git) | Exporter, BlockHandler, ToolbarAction, PluginSettings |
+| SubjectPicker | `com.lector.subjectpicker` | Удобный старт лекции: дата подставляется автоматически, название предмета сохраняется в `SubjectRegistry` и предлагается при следующей лекции (автодополнение + список недавних) | EventBus, PluginSettings |
+
+Пример подключения мода (`assets/plugins.json`):
+
+```json
+{
+  "id": "com.lector.taskmaster",
+  "class": "com.example.lector.plugin.builtin.TaskMasterPlugin",
+  "enabled": true,
+  "settings": { "trigger": "задача" }
+}
+```
+
+Пример кода мода с настройкой (v1.4) — чтение пользовательского слова-триггера:
+
+```java
+@Override
+public void onAttach(PluginContext ctx) {
+    trigger = ctx.settings().getString("trigger", DEFAULT_TRIGGER);
+    ctx.handlers().register("задача", (text, ts) -> newTodoBlock(text, ts));
+    ctx.postProcessors().add(lecture -> mergeConsecutiveTodos(lecture));
+}
+```
+
 ## Соглашения и ограничения
 
 * ID мода — обратно-доменный стиль, уникален; повторная регистрация игнорируется.
@@ -169,5 +204,10 @@ registry.registerBlockRenderer(MyBlock.TYPE_KEY, new BlockRenderer() {
 * v1.1 (реализовано): UI-слоты BlockRenderer — кастомная отрисовка блоков мода в редакторе и Markdown-экспорте.
 * v1.2 (реализовано): Exporter/ExportFormat — моды добавляют свои форматы экспорта (демо: PDF через системный PdfDocument в Highlighter).
 * v1.3 (реализовано): ToolbarAction — плагинные кнопки на панели инструментов редактора (демо: «Тег #» в Highlighter). Ядро само наполняет контейнер тулбара; падение мода не ломает UI.
-* v2 (план): полноценная панель настроек мода (Preferences UI-слот).
+* v1.4 (реализовано): PluginSettings — настройки мода из `plugins.json` и с экрана «Моды» (триггер TaskMaster, длина резюме SummaryBot, папка/теги ObsidianVault).
+* v1.5 (реализовано): EventBus-события жизненного цикла записи (RECORDING_STARTED/STOPPED) — моды реагируют на старт и остановку лекции.
+* v2 (план): кастомные view-группы для рендеров (полноценный UI вместо стандартной ячейки).
 * v3 (план): sandboxed-загрузка внешних APK-плагинов.
+
+Следующие идеи модов: «Flashcards» (вопрос-ответ из определения), «Timestamp»
+(команда «пометь» → закладка), экспорт DOCX отдельным модом.

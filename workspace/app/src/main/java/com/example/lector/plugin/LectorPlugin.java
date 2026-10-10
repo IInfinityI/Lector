@@ -66,6 +66,14 @@ public interface LectorPlugin {
     /** Расширения аудио, которые плагин готов принять в импорт (напр. ".mp3"). */
     default List<String> getSupportedAudioExtensions() { return Collections.emptyList(); }
 
+    /**
+     * UI-слот v1.5: хук «экран создан». Ядро вызывает его после построения
+     * интерфейса своих экранов, передавая идентификатор экрана ("recording",
+     * "editor", "lecture_list") и корневой View. Мод может тонко дополнить
+     * интерфейс (подсказки, чипы), не меняя код ядра. Исключения гасит ядро.
+     */
+    default void onScreenReady(String screenId, android.view.View root) { }
+
     /** Освобождение ресурсов. */
     default void onShutdown() { }
 }
