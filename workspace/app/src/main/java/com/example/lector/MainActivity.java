@@ -4,8 +4,6 @@ import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
 
-import com.google.android.material.snackbar.Snackbar;
-
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.view.View;
@@ -27,15 +25,21 @@ import android.view.MenuItem;
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
-    private ActivityMainBinding binding;;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
 
-        // Инициализация системы модов до загрузки любого UI
-        PluginManager.getInstance(this).initialize();
+        // Инициализация системы модов до загрузки любого UI.
+        // Ошибка одного мода не должна ронять всё приложение — на этом месте
+        // вместо экрана появляется "Hello Android!" из шаблона, если что-то пошло не так.
+        try {
+            PluginManager.getInstance(this).initialize();
+        } catch (Throwable t) {
+            android.util.Log.e("LectorApp", "PluginManager.initialize() упал", t);
+        }
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -47,25 +51,32 @@ public class MainActivity extends AppCompatActivity {
         });
         setSupportActionBar(binding.toolbar);
 
-        // Получаем NavController после того, как представление полностью инициализировано
-        // Используем supportFragmentManager для поиска FragmentContainerView
-        androidx.navigation.fragment.NavHostFragment navHostFragment = 
+        // Получаем NavController после того, как представление полностью инициализировано.
+        // Если по какой-то причине NavHostFragment не найден — падаем с внятной ошибкой
+        // в logcat (тег LectorApp), а не показываем пустой экран.
+        androidx.navigation.fragment.NavHostFragment navHostFragment =
             (androidx.navigation.fragment.NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment_content_main);
-        assert navHostFragment != null;
+        if (navHostFragment == null) {
+            throw new IllegalStateException(
+                "NavHostFragment (R.id.nav_host_fragment_content_main) не найден — " +
+                "проверьте content_main.xml и пересоберите APK начисто");
+        }
+
+        // Если NavHostFragment ещё не успел создать свой graph (крайне редкий случай),
+        // дожидаемся корректного графа, иначе приложение покажет пустый экран.
         NavController navController = navHostFragment.getNavController();
-        
+        if (navController.getGraph() == null) {
+            throw new IllegalStateException(
+                "NavController не имеет графа навигации — проверьте app:navGraph=\"@navigation/nav_graph\" " +
+                "в content_main.xml и наличие nav_graph.xml в res/navigation/");
+        }
+
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
-        binding.fabRecord.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAnchorView(binding.fabRecord)
-                        .setAction("Action", null).show();
-            }
-        });
+        binding.fabRecord.setOnClickListener(view ->
+                navController.navigate(R.id.action_LectureListFragment_to_RecordingFragment));
     }
 
     @Override
@@ -101,11 +112,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        // Получаем NavController через supportFragmentManager
-        androidx.navigation.fragment.NavHostFragment navHostFragment = 
+        // Получаем NavController через supportFragmentManager (может быть null, если
+        // на экране сейчас PluginsFragment — тогда просто поднимаем back stack).
+        androidx.navigation.fragment.NavHostFragment navHostFragment =
             (androidx.navigation.fragment.NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment_content_main);
-        assert navHostFragment != null;
+        if (navHostFragment == null) {
+            // Сейчас в контейнере обычный Fragment (например, PluginsFragment) — просто выходим назад.
+            getSupportFragmentManager().popBackStack();
+            return true;
+        }
         NavController navController = navHostFragment.getNavController();
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
