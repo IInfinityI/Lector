@@ -33,9 +33,8 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
 
         // Инициализация системы модов до загрузки любого UI.
-        // Ошибка одного мода не должна ронять всё приложение — инициализацию
-        // оборачиваем в try/catch, чтобы при сбое плагина открывался основной экран,
-        // а не пустой/шаблонный экран из-за падения Activity.
+        // Ошибка одного мода не должна ронять всё приложение — на этом месте
+        // вместо экрана появляется "Hello Android!" из шаблона, если что-то пошло не так.
         try {
             PluginManager.getInstance(this).initialize();
         } catch (Throwable t) {
@@ -45,9 +44,12 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // CoordinatorLayout + AppBarLayout сами корректно обрабатывают системные отступы
-        // (android:fitsSystemWindows="true" в разметке), поэтому не ставим свой listener.
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main, null);
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+        setSupportActionBar(binding.toolbar);
 
         // Получаем NavController после того, как представление полностью инициализировано.
         // Если по какой-то причине NavHostFragment не найден — падаем с внятной ошибкой
@@ -70,33 +72,11 @@ public class MainActivity extends AppCompatActivity {
                 "в content_main.xml и наличие nav_graph.xml в res/navigation/");
         }
 
-        // ВАЖНО: MaterialToolbar в этом проекте объявлен внутри AppBarLayout как обычный
-        // view, а не как android:theme="@style/...Toolbar" action bar. Вызов
-        // setSupportActionBar(...) при отсутствии action bar в теме приводит к падению
-        // ("The specified child already has a parent..." / IllegalStateException), и на
-        // экране оставался лишь шаблонный текст. Toolbar работает самостоятельно
-        // (app:title + навигация через NavigationUI), поэтому action bar не регистрируем.
-        binding.toolbar.setTitle(getString(R.string.app_name));
-
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-        // Связываем заголовок и кнопку «Назад» с NavController без привязки toolbar к action bar.
-        NavigationUI.setupWithNavController(binding.toolbar, navController, appBarConfiguration);
+        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
-        binding.fabRecord.setOnClickListener(view -> {
-            // Кнопка записи активна только на экране библиотеки лекций; на других
-            // экранах она скрывается (см. OnDestinationChangedListener ниже).
-            try {
-                navController.navigate(R.id.action_LectureListFragment_to_RecordingFragment);
-            } catch (IllegalStateException e) {
-                android.util.Log.e("LectorApp", "Не удалось открыть экран записи", e);
-            }
-        });
-
-        // Показываем/скрываем FAB в зависимости от текущего экрана.
-        navController.addOnDestinationChangedListener((ctrl, destination, args) -> {
-            boolean onList = destination.getId() == R.id.LectureListFragment;
-            binding.fabRecord.setVisibility(onList ? View.VISIBLE : View.GONE);
-        });
+        binding.fabRecord.setOnClickListener(view ->
+                navController.navigate(R.id.action_LectureListFragment_to_RecordingFragment));
     }
 
     @Override
@@ -119,13 +99,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (id == R.id.action_plugins) {
-            // Открываем экран «Моды» поверх NavHost-контейнера и сохраняем state,
-            // чтобы при возврате назад восстановилась привычная навигация приложения.
             getSupportFragmentManager()
                 .beginTransaction()
-                .setReorderingAllowed(true)
                 .replace(R.id.nav_host_fragment_content_main, new PluginsFragment())
-                .addToBackStack("plugins")
+                .addToBackStack(null)
                 .commit();
             return true;
         }
