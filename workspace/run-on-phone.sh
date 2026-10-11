@@ -34,8 +34,17 @@ APK="app/build/outputs/apk/debug/app-debug.apk"
 PKG="com.example.lector"
 ACTIVITY="$PKG/.MainActivity"
 
-echo "==> 1/3 Сборка проекта (assembleDebug)..."
-./gradlew assembleDebug
+# Ключевое: сначала полностью удаляем старое приложение с телефона.
+# Именно из-за остатков старого шаблонного APK на экране мог висеть «Hello Android!»,
+# даже когда код проекта уже починен (Android иногда не перезапускает процесс,
+# если пакет обновился «на живую»).
+if [ -n "$ADB" ] && "$ADB" devices 2>/dev/null | grep -q "device$"; then
+  echo "==> 0/3 Удаляю СТАРУЮ версию $PKG с телефона (если установлена)..."
+  "$ADB" uninstall "$PKG" >/dev/null 2>&1 || true
+fi
+
+echo "==> 1/3 Сборка проекта с нуля (clean assembleDebug)..."
+./gradlew clean assembleDebug
 
 if [ ! -f "$APK" ]; then
   echo "ERROR: APK не найден: $APK" >&2
