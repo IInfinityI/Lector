@@ -160,14 +160,12 @@ public class RecordingFragment extends Fragment implements
         setupButtons();
         startTimer();
 
-        // Дата начала лекции ставится автоматически (видно до старта,
-        // фиксируется в Lecture.date при нажатии «Старт»)
+        // Дата начала лекции ставится автоматически
         binding.textLectureDate.setText(
             com.example.lector.plugin.builtin.SubjectPickerPlugin
                 .dateLabel(System.currentTimeMillis()));
 
         // Название предмета: подсказки из ранее сохранённых названий
-        // (реестр SubjectRegistry + мод SubjectPicker)
         String savedSubject = getArguments() != null ?
             getArguments().getString("subject", "") : "";
         if (savedSubject.isEmpty()) {
@@ -179,14 +177,14 @@ public class RecordingFragment extends Fragment implements
         binding.editSubject.setSelection(binding.editSubject.getText().length());
         refreshSubjectSuggestions();
 
-        // Уведомляем моды об готовности экрана записи (UI-слот v1.5)
+        // Уведомляем моды об готовности экрана записи
         com.example.lector.plugin.PluginManager.getInstance(requireContext())
             .notifyScreenReady("recording", binding.getRoot());
     }
 
     /** Перезаполняет выпадающий список предметов реестра. */
     private void refreshSubjectSuggestions() {
-        java.util.List<String> names = new ArrayList<>();
+        List<String> names = new ArrayList<>();
         for (com.example.lector.data.SubjectRegistry.Entry e :
                 new com.example.lector.data.SubjectRegistry(requireContext()).recent(50)) {
             names.add(e.name);
@@ -254,8 +252,6 @@ public class RecordingFragment extends Fragment implements
         
         try {
             currentLecture = new Lecture(subject, System.currentTimeMillis());
-            // Название предмета сохраняется в реестре — оно появится в подсказках
-            // при следующей лекции (экран записи, выпадающий список «Предмет»)
             new com.example.lector.data.SubjectRegistry(requireContext()).remember(subject);
             recorderService.startRecording(subject);
             transcriptionService.startListening();
@@ -285,7 +281,11 @@ public class RecordingFragment extends Fragment implements
             binding.tvLiveTranscript.setText("");
             binding.liveScroll.setVisibility(View.VISIBLE);
             binding.recyclerViewContent.setVisibility(View.GONE);
-
+            
+            // СКРЫВАЕМ ЗАГЛУШКУ "ГОТОВЫ СЛУШАТЬ", ЧТОБЫ ОНА НЕ МЕШАЛА ТЕКСТУ
+            if (binding.emptyStateHint != null) {
+                binding.emptyStateHint.setVisibility(View.GONE);
+            }
 
             // Событие для модов: начало записи
             com.example.lector.plugin.PluginManager.getInstance(requireContext())
@@ -318,7 +318,6 @@ public class RecordingFragment extends Fragment implements
         binding.liveScroll.setVisibility(View.GONE);
         binding.recyclerViewContent.setVisibility(View.VISIBLE);
         
-
         // Событие для модов: конец записи
         com.example.lector.plugin.PluginManager.getInstance(requireContext())
             .getEventBus().publish(
@@ -338,7 +337,6 @@ public class RecordingFragment extends Fragment implements
             com.example.lector.services.ContentAnalyzerService.DictationCommand cmd) {
         switch (cmd) {
             case NEWLINE:
-                // Пустая строка в живой ленте — визуально отделяет абзацы
                 commitLiveLine("", "");
                 Toast.makeText(getContext(), "Новая строка", Toast.LENGTH_SHORT).show();
                 break;
@@ -351,7 +349,7 @@ public class RecordingFragment extends Fragment implements
         }
     }
 
-    /** Копирование расшифровки в буфер обмена ОС (как в «Голосовом блокноте»). */
+    /** Копирование расшифровки в буфер обмена ОС. */
     private void copyTranscriptToClipboard() {
         if (!isAdded()) return;
         String text = liveCommitted.toString().trim();
@@ -385,18 +383,15 @@ public class RecordingFragment extends Fragment implements
         currentLecture.setBlocks(contentBlocks);
         currentLecture.setDuration(System.currentTimeMillis() - recordingStartTime);
 
-        // Пост-обработка: встроенный процессор ядра + процессоры модов
         new com.example.lector.services.CorePostProcessor().process(currentLecture);
         com.example.lector.plugin.PluginManager.getInstance(requireContext())
             .getRegistry().runPostProcessors(currentLecture);
         contentBlocks = currentLecture.getBlocks();
 
-        // Сохранение через LectureRepository (JSON-хранилище, совместимое с модами)
         boolean saved = new com.example.lector.data.LectureRepository(requireContext())
             .save(currentLecture);
 
         if (saved) {
-            // Событие для модов: лекция сохранена
             com.example.lector.plugin.PluginManager.getInstance(requireContext())
                 .getEventBus().publish(
                     com.example.lector.plugin.EventBus.Event.LECTURE_SAVED,
@@ -457,19 +452,16 @@ public class RecordingFragment extends Fragment implements
     }
     
     private void addMathBlock() {
-        // Добавление математического блока
         TextBlock mathBlock = new TextBlock("Математическое выражение", System.currentTimeMillis());
         contentBlocks.add(mathBlock);
         blockAdapter.notifyDataSetChanged();
     }
     
     private void addTableBlock() {
-        // Добавление таблицы
         Toast.makeText(getContext(), "Создание таблицы...", Toast.LENGTH_SHORT).show();
     }
     
     private void takePhoto() {
-        // Открытие камеры
         Toast.makeText(getContext(), "Открытие камеры...", Toast.LENGTH_SHORT).show();
     }
     
@@ -479,10 +471,9 @@ public class RecordingFragment extends Fragment implements
     }
     
     private void requestAudioPermission() {
-        java.util.List<String> needed = new java.util.ArrayList<>();
+        List<String> needed = new ArrayList<>();
         needed.add(Manifest.permission.RECORD_AUDIO);
-        // На Android 13+ без POST_NOTIFICATIONS уведомление фоновой записи не покажется
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ContextCompat.checkSelfPermission(requireContext(),
                     Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             needed.add(Manifest.permission.POST_NOTIFICATIONS);
@@ -502,7 +493,6 @@ public class RecordingFragment extends Fragment implements
                 && Manifest.permission.RECORD_AUDIO.equals(permissions[0])) {
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Разрешение выдано — продолжаем начатое действие
                 startRecording();
             } else {
                 Toast.makeText(requireContext(),
@@ -574,8 +564,6 @@ public class RecordingFragment extends Fragment implements
     @Override
     public void onTextRecognized(String newText, String fullText) {
         requireActivity().runOnUiThread(() -> {
-            // Голосовые команды управления диктовкой: «новая строка»,
-            // «скопировать», «сохранить» — не создают блоков, а выполняют действие
             com.example.lector.services.ContentAnalyzerService.DictationCommand cmd =
                 analyzerService.getDictationCommand(newText);
             if (cmd != null) {
@@ -583,7 +571,6 @@ public class RecordingFragment extends Fragment implements
                 return;
             }
 
-            // Сначала моды (цепочка BlockHandler), затем встроенный анализатор ядра
             ContentBlock block = com.example.lector.plugin.PluginManager
                 .getInstance(requireContext()).getRegistry()
                 .handleText(newText, System.currentTimeMillis() - recordingStartTime);
@@ -594,25 +581,20 @@ public class RecordingFragment extends Fragment implements
             }
             
             if (block != null) {
-                // Определение спикера
                 diarizationService.identifySpeaker(block, newText);
                 contentBlocks.add(block);
                 blockAdapter.notifyDataSetChanged();
-                
 
-                // События для модов
                 com.example.lector.plugin.EventBus bus =
                     com.example.lector.plugin.PluginManager.getInstance(requireContext())
                         .getEventBus();
                 bus.publish(com.example.lector.plugin.EventBus.Event.TRANSCRIPTION_RECEIVED, newText);
                 bus.publish(com.example.lector.plugin.EventBus.Event.BLOCK_ADDED, block);
-                // Прокрутка к новому блоку
                 binding.recyclerViewContent.scrollToPosition(contentBlocks.size() - 1);
             }
             
             binding.transcriptionStatus.setText(newText);
 
-            // Фиксация подтверждённой строки в живой ленте (для списывания с экрана)
             String speaker = block != null ? block.getSpeakerName() : "";
             commitLiveLine(newText, speaker);
         });

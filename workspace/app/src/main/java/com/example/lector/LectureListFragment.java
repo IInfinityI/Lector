@@ -44,6 +44,13 @@ public class LectureListFragment extends Fragment {
     private List<Lecture> lectureList;
     private com.example.lector.data.LectureRepository repository;
     
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Инициализация ДО onViewCreated — иначе loadLectures() упадёт с NPE
+        repository = new com.example.lector.data.LectureRepository(requireContext());
+    }
+    
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, 

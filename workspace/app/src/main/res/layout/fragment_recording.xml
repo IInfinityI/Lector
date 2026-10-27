@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/lector_background">
 
-    <!-- Верхняя панель с предметом и статусом -->
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ: Дата, Ввод предмета, Статус -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar"
         android:layout_width="match_parent"
@@ -18,42 +18,60 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="16dp">
 
-            <!-- Дата начала лекции (ставится автоматически, фиксируется при старте) -->
+            <!-- Дата -->
             <TextView
                 android:id="@+id/text_lecture_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
-                android:textSize="13sp"
+                android:layout_marginBottom="12dp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/lector_primary"
-                tools:text="📅 сегодня, суббота, 10.10.2026" />
+                tools:text="📅 Сегодня, 27.10.2026" />
 
-            <!-- Поле предмета -->
+            <!-- ЯРКОЕ ПОЛЕ ВВОДА ПРЕДМЕТА -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_subject"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:hint="Название предмета"
+                app:hintTextColor="@color/lector_primary" 
+                app:boxStrokeColor="@color/lector_primary" 
+                app:boxStrokeWidth="2dp"
+                app:boxBackgroundColor="#F2F2F2"
+                app:startIconDrawable="@android:drawable/ic_menu_edit"
+                app:startIconTint="@color/lector_primary"
                 app:endIconMode="dropdown_menu"
-                android:hint="@string/recording_subject_hint">
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp">
 
                 <AutoCompleteTextView
                     android:id="@+id/edit_subject"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
+                    android:inputType="textCapSentences"
                     android:completionThreshold="0"
-                    android:maxLines="1" />
-
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:maxLines="1"
+                    android:textSize="16sp"
+                    android:textColor="#000000"
+                    android:textColorHint="#888888" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Статус записи -->
+            <!-- Статус и Таймер -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
+                android:background="#F5F5F5"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
@@ -79,89 +97,136 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="16sp"
-                    android:textColor="@color/lector_text_primary"
+                    android:textColor="#000000"
                     android:textStyle="bold"
+                    android:fontFamily="monospace"
                     android:text="00:00:00" />
             </LinearLayout>
 
-            <!-- Текущий спикер -->
-            <TextView
-                android:id="@+id/current_speaker"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="12sp"
-                android:textColor="@color/lector_text_secondary"
-                android:text="@string/speaker_auto_detect" />
-
-            <!-- Транскрибация -->
-            <TextView
-                android:id="@+id/transcription_status"
+            <!-- Спикер и подсказки -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textSize="13sp"
-                android:textColor="@color/lector_text_hint"
-                android:maxLines="2"
-                android:ellipsize="end"
-                android:text="" />
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/current_speaker"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="12sp"
+                    android:textStyle="italic"
+                    android:textColor="@color/lector_text_secondary"
+                    android:text="@string/speaker_auto_detect" />
+
+                <TextView
+                    android:id="@+id/transcription_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/lector_text_hint"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="" />
+            </LinearLayout>
 
         </LinearLayout>
-
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Живая лента записи в реальном времени (подтверждённые строки + печатающийся текст) -->
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/live_scroll"
+    <!-- ЦЕНТРАЛЬНАЯ ЧАСТЬ: Текст или Подсказка -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/lector_background"
-        android:fillViewport="true"
-        android:paddingTop="120dp"
-        android:paddingBottom="170dp"
-        android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <TextView
-            android:id="@+id/tv_live_transcript"
-            android:layout_width="match_parent"
+        <!-- Подсказка для пустого экрана (исчезает при старте записи) -->
+        <LinearLayout
+            android:id="@+id/empty_state_hint"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:src="@android:drawable/ic_btn_speak_now"
+                app:tint="#D0D0D0" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Готовы слушать?"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#A0A0A0" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Введите предмет выше и нажмите «Начать запись»."
+                android:textSize="14sp"
+                android:gravity="center"
+                android:textColor="#B0B0B0" />
+        </LinearLayout>
+
+        <!-- Живая лента (текст во время записи) -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/live_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
             android:paddingHorizontal="16dp"
-            android:textSize="18sp"
-            android:lineSpacingExtra="6dp"
-            android:textIsSelectable="true"
-            android:typeface="monospace"
-            android:textColor="@color/lector_text_primary"
-            android:text="" />
+            android:paddingTop="16dp"
+            android:paddingBottom="200dp"
+            android:clipToPadding="false">
 
-    </androidx.core.widget.NestedScrollView>
+            <TextView
+                android:id="@+id/tv_live_transcript"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:lineSpacingExtra="8dp"
+                android:textIsSelectable="true"
+                android:textColor="@color/lector_text_primary"
+                android:text="" />
+        </androidx.core.widget.NestedScrollView>
 
-    <!-- Структурированный список блоков (виден после остановки записи) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view_content"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:clipToPadding="false"
-        android:paddingTop="140dp"
-        android:paddingBottom="160dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        <!-- Список блоков (появляется после остановки) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:clipToPadding="false"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="200dp" />
 
-    <!-- Панель управления -->
+    </FrameLayout>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ: Кнопки -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="vertical"
         android:background="@color/lector_surface"
-        android:elevation="8dp">
+        android:elevation="12dp"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
 
-        <!-- Кнопки действий -->
+        <!-- Кнопки инструментов -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="8dp"
             android:gravity="center">
 
             <com.google.android.material.button.MaterialButton
@@ -170,10 +235,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginHorizontal="4dp"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:text="@string/block_math"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:text="Формула"
+                android:textSize="12sp"
+                android:maxLines="1"
                 app:icon="@drawable/ic_math"
-                app:iconGravity="textStart" />
+                app:iconGravity="textTop"
+                app:iconPadding="4dp"
+                app:iconSize="24dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_add_table"
@@ -181,10 +250,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginHorizontal="4dp"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:text="@string/block_table"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:text="Таблица"
+                android:textSize="12sp"
+                android:maxLines="1"
                 app:icon="@drawable/ic_table"
-                app:iconGravity="textStart" />
+                app:iconGravity="textTop"
+                app:iconPadding="4dp"
+                app:iconSize="24dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_add_photo"
@@ -192,59 +265,70 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginHorizontal="4dp"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:text="@string/block_image"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:text="Фото"
+                android:textSize="12sp"
+                android:maxLines="1"
                 app:icon="@drawable/ic_camera"
-                app:iconGravity="textStart" />
-
+                app:iconGravity="textTop"
+                app:iconPadding="4dp"
+                app:iconSize="24dp" />
         </LinearLayout>
 
-        <!-- Основные кнопки управления -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginVertical="8dp"/>
+
+        <!-- Главные кнопки -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="12dp"
-            android:gravity="center">
+            android:gravity="center_vertical">
 
+            <!-- Кнопка Старт (широкая) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_start_stop"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
                 android:layout_weight="2"
                 android:layout_marginEnd="8dp"
-                android:text="@string/recording_start"
+                android:text="Начать запись"
+                android:textSize="16sp"
+                android:textStyle="bold"
                 app:icon="@android:drawable/ic_media_play"
                 app:iconGravity="textStart"
                 app:cornerRadius="28dp" />
 
+            <!-- Кнопка Пауза (только иконка) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_pause_resume"
-                android:layout_width="0dp"
+                android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="8dp"
+                android:layout_marginEnd="8dp"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:text="@string/recording_pause"
                 app:icon="@android:drawable/ic_media_pause"
                 app:iconGravity="textStart"
-                app:cornerRadius="28dp" />
+                app:iconPadding="0dp"
+                app:cornerRadius="28dp"
+                android:contentDescription="Пауза" />
 
+            <!-- Кнопка Стоп/Сохранить (только иконка) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_finish"
-                android:layout_width="0dp"
+                android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:text="@string/recording_stop"
                 app:icon="@android:drawable/ic_menu_save"
                 app:iconGravity="textStart"
+                app:iconPadding="0dp"
                 app:cornerRadius="28dp"
-                app:strokeColor="@color/lector_primary" />
+                app:strokeColor="@color/lector_primary"
+                android:contentDescription="Завершить" />
 
         </LinearLayout>
-
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
